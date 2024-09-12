@@ -1,0 +1,71 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:13
+    container_name: postgres-db
+    environment:
+      POSTGRES_USER: myuser
+      POSTGRES_PASSWORD: mypassword
+      POSTGRES_DB: orders_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+
+  mongo-users:
+    image: mongo:4.4
+    container_name: mongo-users
+    environment:
+      MONGO_INITDB_DATABASE: users_db
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo-users-data:/data/db
+
+  mongo-inventory:
+    image: mongo:4.4
+    container_name: mongo-inventory
+    environment:
+      MONGO_INITDB_DATABASE: inventory_db
+    ports:
+      - "27018:27017"  # Expose on a different port to avoid conflict with the other MongoDB instance
+    volumes:
+      - mongo-inventory-data:/data/db
+
+  users-service:
+    build: ./services/users
+    ports:
+      - "3001:3001"
+    depends_on:
+      - mongo-users
+
+  orders-service:
+    build: ./services/orders
+    ports:
+      - "3002:3002"
+    depends_on:
+      - postgres
+    environment:
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: 5432
+      POSTGRES_USER: myuser
+      POSTGRES_PASSWORD: mypassword
+      POSTGRES_DB: orders_db
+
+  inventory-service:
+    build: ./services/inventory
+    ports:
+      - "3003:3003"
+    depends_on:
+      - mongo-inventory
+
+  graphql:
+    build: ./services/graphql
+    ports:
+      - "4000:4000"
+
+volumes:
+  postgres-data:
+  mongo-users-data:
+  mongo-inventory-data:
