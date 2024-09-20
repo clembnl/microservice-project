@@ -10,10 +10,6 @@ class OrderService {
     try {
       const newOrder = this.orderRepository.create(order);
       await this.orderRepository.save(newOrder);
-      // After creating the order, update the user in the users service
-      await axios.put(`http://users-service:3001/users/${order.userId}/orders`, {
-        orderId: newOrder.id
-      });
       return newOrder;
     } catch (error) {
       console.error('Error creating order:', error);

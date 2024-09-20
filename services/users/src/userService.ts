@@ -44,14 +44,14 @@ class UserService {
   }
 
   // This method adds an order ID to a specific user
-  async addOrderToUser(id: string, orderData: { orderId: string }): Promise<User | null> {
+  async addOrderToUser(id: string, orderId: string): Promise<User | null> {
     try {
       // Convert string `id` to MongoDB ObjectId
       const objectId = new Types.ObjectId(id);
       // Use `findByIdAndUpdate` to add the order ID to the user's orders array
       return await UserModel.findByIdAndUpdate(
         objectId,
-        { $push: { order_ids: orderData.orderId } },  // Push the new order ID to the 'orders' array
+        { $push: { order_ids: orderId } },  // Push the new order ID to the 'orders' array
         { new: true }  // Return the updated user
       ).exec();
     } catch (error) {

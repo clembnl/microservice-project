@@ -1,12 +1,22 @@
 import { Request, Response } from 'express';
 import { OrderService } from './orderService';
+import { sendOrderCreatedEvent } from './kafka/kafkaProducer';
 
 class OrderController {
   private orderService = new OrderService();
 
-  async createOrder(req: Request, res: Response): Promise<void> {
-    const order = await this.orderService.createOrder(req.body);
-    res.status(201).json(order);
+  async createOrder(req: Request, res: Response): Promise<Response> {
+    try {
+      const newOrder = await this.orderService.createOrder(req.body);
+      if (!newOrder) {
+        return res.status(500).json({ message: 'Error creating the order' });
+      }
+      await sendOrderCreatedEvent(newOrder);  // Send event to Kafka
+      return res.status(201).json(newOrder);
+    } catch (error) {
+        console.error('Error creating order:', error);
+        return res.status(500).json({ message: 'Error creating order' });
+    }
   }
 
   async getOrderById(req: Request, res: Response): Promise<void> {

@@ -63,19 +63,6 @@ class UserController {
     }
   }
 
-  async addOrderToUser(req: Request, res: Response) {
-    try {
-      const updatedUser = await this.userService.addOrderToUser(req.params.id, req.body);
-      if (!updatedUser) {
-        return res.status(404).json({ message: 'User not found or failed to update' });
-      }
-      return res.json(updatedUser);
-    } catch (error) {
-      console.error('Error updating user:', error);
-      return res.status(500).json({ message: 'Error updating user' });
-    }
-  }
-
   // Delete a user by ID
   async deleteUser(req: Request, res: Response) {
     try {
