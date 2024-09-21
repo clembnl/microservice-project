@@ -71,11 +71,13 @@ const orderLoader = new DataLoader<string, Order[]>(async (userIds) => {
 // Example product loader that fetches products by IDs
 const productLoader = new DataLoader(async (productIds: readonly string[]) => {
   try {
-    const response = await axios.get(`http://inventory-service:3003/products?ids=${productIds.join(',')}`);
+    const response = await axios.get(`http://inventory-service:3003/products`, {
+      params: { ids: productIds.join(',') }  // Correctly passing the productIds
+    });
     console.log('Product Loader Response:', response.data); // Log the data to check for issues
     const products = response.data;
     // Ensure the length of the returned array matches productIds
-    return productIds.map(productId => products.find((product: Product) => product._id === productId) || null);
+    return productIds.map(productId => products.find((product: Product) => product._id === productId));
   } catch (error) {
     console.error('Error fetching products:', error);
     return productIds.map(() => new Error('Error fetching products'));
@@ -172,25 +174,21 @@ const resolvers = {
     createOrder: async (_: any, { userId, productIds }: { userId: string, productIds: string[] }): Promise<Order> => {
       const products = await productLoader.loadMany(productIds);
 
-      // Check if there is an error in the products response
-      if (products.some((product) => product instanceof Error)) {
-        console.error('Error loading products');
-        throw new Error('Error loading products');
-      }
+      // Check if products are found and map _id to id
+      const resolvedProducts = products.map((product: Product) => {
+        if (product instanceof Error || !product) {
+          // Handle missing products if necessary
+          console.error('Product not found:', product);
+          throw new Error('Product not found');
+        }
+        return { ...product, id: product._id };
+      });
 
-      // Map productIds to the corresponding products
-      const filteredProducts = productIds.map(productId =>
-        (products as Product[]).find(product => product._id === productId)
-      );
-
-      // Check if any of the products were not found
-      if (filteredProducts.some(product => !product)) {
-        console.error('Some products not found');
-        throw new Error('Some products not found');
-      }
+      // Remove any null products or throw an error if necessary
+      const nonNullProducts = resolvedProducts.filter(product => product !== null);
 
        // Calculate the total price
-      const total = (products as Product[]).reduce((sum, product) => sum + product.price, 0);
+      const total = (nonNullProducts as Product[]).reduce((sum, product) => sum + (product?.price || 0), 0);
 
       // Send the order creation request to the order service
       const orderResponse = await axios.post('http://orders-service:3002/orders', {
@@ -200,7 +198,7 @@ const resolvers = {
         status: 'pending'
       });
 
-      return { ...orderResponse.data, products: filteredProducts };
+      return { ...orderResponse.data, products: nonNullProducts };
     },
     updateOrder: async (_: any, { id, status }: { id: string, status: string }): Promise<Order> => {
       const response = await axios.put(`http://orders-service:3002/orders/${id}`, { status });

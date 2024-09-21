@@ -26,6 +26,17 @@ class ProductService {
     }
   }
 
+  // Service method to get products by an array of IDs
+  async getProductsByIds(ids: string[]): Promise<Product[] | null> {
+    try {
+      // Query the database for products whose IDs match the provided array
+      return await ProductModel.find({ _id: { $in: ids } }).exec();
+    } catch (error) {
+      console.error('Error fetching products by IDs:', error);
+      return null;  // Handle the error appropriately
+    }
+  }
+
   async getAllProducts(): Promise<Product[] | null> {
     try {
       return await ProductModel.find().exec();

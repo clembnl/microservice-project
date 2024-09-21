@@ -1,12 +1,22 @@
+import { readFileSync } from 'fs';
 import { Kafka } from 'kafkajs';
 import { UserService } from '../userService';  // Import the user service to update the user
 
 const kafka = new Kafka({
     clientId: 'user-service',
     brokers: ['kafka:9092'],
+    ssl: false,
+    sasl: {
+        mechanism: 'plain',
+        username: 'user-service',
+        password: 'user-service-secret'
+      }
   });
   
-const consumer = kafka.consumer({ groupId: 'user-group' });
+const consumer = kafka.consumer({ 
+    groupId: 'user-group'
+    // isolationLevel is not directly supported with this version of kafkajs
+});
 const userService = new UserService();
 
 export const consumeOrderCreatedEvent = async (): Promise<void> => {

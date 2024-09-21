@@ -4,18 +4,25 @@ import { ProductService } from './productService';
 class ProductController {
   private productService = new ProductService();
 
-  // Get all products
+  // Get products by multiple IDs or all products
   async getAllProducts(req: Request, res: Response) {
     try {
-      // Await the retrieval of all products
-      const products = await this.productService.getAllProducts();
-      if (!products) {
+      const ids = req.query.ids ? (req.query.ids as string).split(',') : null;
+
+      let products;
+      if (ids) {
+        // If IDs are provided, fetch the products by those IDs
+        products = await this.productService.getProductsByIds(ids);
+      } else {
+        // If no IDs are provided, fetch all products
+        products = await this.productService.getAllProducts();
+      }
+
+      if (!products || products.length === 0) {
         return res.status(404).json({ message: 'No products found' });
       }
-      else if (products.length === 0) {
-        return res.status(404).json({ message: 'No products found' });
-      }
-      // Return the list of products
+
+      // Return the products
       return res.json(products);
     } catch (error) {
       console.error('Error retrieving products:', error);
