@@ -1,1 +1,7 @@
+.DS_Store
 node_modules
+kafka/ssl/*
+!kafka/ssl/create-certs.sh
+kafka-1-data
+kafka-2-data
+kafka-data
