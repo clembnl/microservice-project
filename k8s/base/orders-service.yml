@@ -1,0 +1,65 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: orders-service
+  namespace: microservices
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: orders-service
+  template:
+    metadata:
+      labels:
+        app: orders-service
+    spec:
+      initContainers:
+        - name: wait-for-postgres
+          image: busybox
+          command: ['sh', '-c', 'until nc -z postgres.microservices.svc.cluster.local 5432; do echo waiting for postgres; sleep 10; done']
+      containers:
+        - name: orders-service
+          image: clementbonal/microservice-project_orders-service:v0.3
+          ports:
+            - containerPort: 3002
+          env:
+            - name: POSTGRES_HOST
+              value: postgres
+            - name: POSTGRES_PORT
+              value: "5432"
+            - name: POSTGRES_USER
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-secrets
+                  key: POSTGRES_USER
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-secrets
+                  key: POSTGRES_PASSWORD
+            - name: POSTGRES_DB
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-secrets
+                  key: POSTGRES_DB
+            # - name: KAFKA_BROKER
+            #   value: kafka:9092
+      #     volumeMounts:
+      #       - name: kafka-client-secrets
+      #         mountPath: /etc/kafka/secrets
+      #         readOnly: true
+      # volumes:
+      #   - name: kafka-client-secrets
+      #     secret:
+      #       secretName: orders-service-kafka-secrets
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: orders-service
+  namespace: microservices
+spec:
+  ports:
+    - port: 3002
+  selector:
+    app: orders-service

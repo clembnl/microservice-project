@@ -9,7 +9,7 @@ class ProductController {
     try {
       const ids = req.query.ids ? (req.query.ids as string).split(',') : null;
 
-      let products;
+      var products;
       if (ids) {
         // If IDs are provided, fetch the products by those IDs
         products = await this.productService.getProductsByIds(ids);
@@ -19,7 +19,7 @@ class ProductController {
       }
 
       if (!products || products.length === 0) {
-        return res.status(404).json({ message: 'No products found' });
+        return res.json();
       }
 
       // Return the products

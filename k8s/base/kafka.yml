@@ -1,0 +1,52 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kafka
+  namespace: microservices
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: kafka
+  template:
+    metadata:
+      labels:
+        app: kafka
+    spec:
+      containers:
+        - name: kafka
+          image: wurstmeister/kafka:latest
+          envFrom:
+            - configMapRef:
+                name: kafka-config
+            - secretRef:
+                name: kafka-secrets
+          env:
+            - name: KAFKA_BROKER_ID
+              value: "1"
+          ports:
+            - containerPort: 9092
+          volumeMounts:
+            - name: kafka-storage
+              mountPath: /var/lib/kafka/data
+            - name: kafka-secrets
+              mountPath: /etc/kafka/secrets
+              readOnly: true
+      volumes:
+        - name: kafka-storage
+          persistentVolumeClaim:
+            claimName: kafka-pvc
+        - name: kafka-secrets
+          secret:
+            secretName: kafka-secrets
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: kafka
+  namespace: microservices
+spec:
+  ports:
+    - port: 9092
+  selector:
+    app: kafka

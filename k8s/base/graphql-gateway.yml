@@ -1,0 +1,39 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: graphql-gateway
+  namespace: microservices
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: graphql-gateway
+  template:
+    metadata:
+      labels:
+        app: graphql-gateway
+    spec:
+      containers:
+        - name: graphql-gateway
+          image: clementbonal/microservice-project_graphql:v2.2
+          ports:
+            - containerPort: 4000
+          env:
+            - name: USERS_SERVICE_URL
+              value: http://users-service:3001
+            - name: ORDERS_SERVICE_URL
+              value: http://orders-service:3002
+            - name: INVENTORY_SERVICE_URL
+              value: http://inventory-service:3003
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: graphql-gateway
+  namespace: microservices
+spec:
+  type: LoadBalancer
+  ports:
+    - port: 4000
+  selector:
+    app: graphql-gateway

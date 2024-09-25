@@ -9,10 +9,10 @@ class UserController {
     try {
       const users = await this.userService.getAllUsers();
       if (!users) {
-        return res.status(404).json({ message: 'No users found' });
+        return res.json({});
       }
-      else if (users.length === 0) {
-        return res.status(404).json({ message: 'No users found' });
+      else if (users.length == 0) {
+        return res.json({});
       }
       return res.json(users);
     } catch (error) {
