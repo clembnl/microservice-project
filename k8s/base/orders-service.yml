@@ -19,7 +19,7 @@ spec:
           command: ['sh', '-c', 'until nc -z postgres.microservices.svc.cluster.local 5432; do echo waiting for postgres; sleep 10; done']
       containers:
         - name: orders-service
-          image: clementbonal/microservice-project_orders-service:v0.3
+          image: clementbonal/microservice-project_orders-service:v1.2
           ports:
             - containerPort: 3002
           env:
@@ -42,16 +42,16 @@ spec:
                 secretKeyRef:
                   name: postgres-secrets
                   key: POSTGRES_DB
-            # - name: KAFKA_BROKER
-            #   value: kafka:9092
-      #     volumeMounts:
-      #       - name: kafka-client-secrets
-      #         mountPath: /etc/kafka/secrets
-      #         readOnly: true
-      # volumes:
-      #   - name: kafka-client-secrets
-      #     secret:
-      #       secretName: orders-service-kafka-secrets
+            - name: KAFKA_BROKER
+              value: kafka:9092
+          volumeMounts:
+            - name: kafka-client-secrets
+              mountPath: /etc/kafka/secrets
+              readOnly: true
+      volumes:
+        - name: kafka-client-secrets
+          secret:
+            secretName: orders-service-kafka-secrets
 ---
 apiVersion: v1
 kind: Service

@@ -3,7 +3,7 @@ import express from 'express';
 import { errorHandler } from './middleware/errorHandler';
 import { logger } from './middleware/logger';
 import { UserController } from './userController';
-//import { consumeOrderCreatedEvent } from './kafka/kafkaConsumer'; // Kafka Consumer logic
+import { consumeOrderCreatedEvent } from './kafka/kafkaConsumer'; // Kafka Consumer logic
 
 mongoose.connect('mongodb://mongo-users:27017/users_db').then(() => {
   console.log('Connected to MongoDB for Users service');
@@ -28,7 +28,7 @@ app.listen(3001, () => {
   console.log('Users service is running on port 3001');
 
   // Start Kafka consumer here after the service has started
-  // consumeOrderCreatedEvent().catch((err: Error) => {
-  //   console.error('Error starting Kafka consumer:', err);
-  // });
+  consumeOrderCreatedEvent().catch((err: Error) => {
+    console.error('Error starting Kafka consumer:', err);
+  });
 });

@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
 import { OrderService } from './orderService';
-//import { sendOrderCreatedEvent } from './kafka/kafkaProducer';
+import { sendOrderCreatedEvent } from './kafka/kafkaProducer';
 
 class OrderController {
   private orderService = new OrderService();
@@ -11,7 +11,7 @@ class OrderController {
       if (!newOrder) {
         return res.status(500).json({ message: 'Error creating the order' });
       }
-      //await sendOrderCreatedEvent(newOrder);  // Send event to Kafka
+      await sendOrderCreatedEvent(newOrder);  // Send event to Kafka
       return res.status(201).json(newOrder);
     } catch (error) {
         console.error('Error creating order:', error);

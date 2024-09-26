@@ -19,22 +19,22 @@ spec:
           command: ['sh', '-c', 'until nc -z mongo-users.microservices.svc.cluster.local 27017; do echo waiting for mongo-users; sleep 10; done']
       containers:
         - name: users-service
-          image: clementbonal/microservice-project_users-service:v0.2
+          image: clementbonal/microservice-project_users-service:v1.1
           ports:
             - containerPort: 3001
           env:
             - name: MONGO_URI
               value: mongodb://mongo-users:27017/users_db
-      #       - name: KAFKA_BROKER
-      #         value: kafka:9092
-      #     volumeMounts:
-      #       - name: kafka-client-secrets
-      #         mountPath: /etc/kafka/secrets
-      #         readOnly: true
-      # volumes:
-      #   - name: kafka-client-secrets
-      #     secret:
-      #       secretName: users-service-kafka-secrets
+            - name: KAFKA_BROKER
+              value: kafka:9092
+          volumeMounts:
+            - name: kafka-client-secrets
+              mountPath: /etc/kafka/secrets
+              readOnly: true
+      volumes:
+        - name: kafka-client-secrets
+          secret:
+            secretName: users-service-kafka-secrets
 ---
 apiVersion: v1
 kind: Service

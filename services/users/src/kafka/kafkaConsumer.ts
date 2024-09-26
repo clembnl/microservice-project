@@ -4,7 +4,8 @@ import { UserService } from '../userService';  // Import the user service to upd
 
 const kafka = new Kafka({
     clientId: 'user-service',
-    brokers: ['kafka-1:9092', 'kafka-2:9093', 'kafka-3:9094'],
+    //brokers: ['kafka-1:9092', 'kafka-2:9093', 'kafka-3:9094'],
+    brokers: ['kafka:9092'],
     ssl: {
         rejectUnauthorized: false,
         ca: [readFileSync('/etc/kafka/secrets/ca-cert.pem', 'utf-8')],

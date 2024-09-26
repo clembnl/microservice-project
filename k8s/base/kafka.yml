@@ -16,14 +16,6 @@ spec:
       containers:
         - name: kafka
           image: wurstmeister/kafka:latest
-          envFrom:
-            - configMapRef:
-                name: kafka-config
-            - secretRef:
-                name: kafka-secrets
-          env:
-            - name: KAFKA_BROKER_ID
-              value: "1"
           ports:
             - containerPort: 9092
           volumeMounts:
@@ -32,6 +24,24 @@ spec:
             - name: kafka-secrets
               mountPath: /etc/kafka/secrets
               readOnly: true
+          envFrom:
+            - configMapRef:
+                name: kafka-config
+          env:
+            - name: KAFKA_PORT
+              value: "9092"
+            - name: KAFKA_SSL_KEYSTORE_LOCATION
+              value: "/etc/kafka/secrets/kafka.server.keystore.jks"
+            - name: KAFKA_SSL_KEYSTORE_PASSWORD
+              value: "kafka123"
+            - name: KAFKA_SSL_KEY_PASSWORD
+              value: "kafka123"
+            - name: KAFKA_SSL_TRUSTSTORE_LOCATION
+              value: "/etc/kafka/secrets/kafka.server.truststore.jks"
+            - name: KAFKA_SSL_TRUSTSTORE_PASSWORD
+              value: "kafka123"
+            - name: KAFKA_OPTS
+              value: "-Djava.security.auth.login.config=/etc/kafka/secrets/kafka_server_jaas.conf"
       volumes:
         - name: kafka-storage
           persistentVolumeClaim:

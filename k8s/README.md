@@ -67,6 +67,19 @@ Create a namespace to keep all resources under a single logical grouping:
 kubectl apply -f k8s/base/namespace.yml
 ```
 
+### 2. Create Kafka-Secrets
+
+Before deploying Kafka, keystore, truststore, and certificate files should be stored as binary files and mounted as volumes, not passed as environment variables. Kubernetes will handle the encoding, this will correctly store your secret values as files in Kubernetes.
+
+```bash
+kubectl create secret generic kafka-secrets \
+  --from-file=kafka.server.keystore.jks=./kafka/ssl/kafka.server.keystore.jks \
+  --from-file=kafka.server.truststore.jks=./kafka/ssl/kafka.server.truststore.jks \
+  --from-file=ca-cert.pem=./kafka/ssl/ca-cert.pem \
+  --from-file=kafka_server_jaas.conf=./kafka/kafka_server_jaas.conf \    
+  --namespace=microservices
+```
+
 ### 2. Apply Configuration and Secrets
 
 Before deploying services, we need to set up the required configurations and secrets for Kafka, PostgreSQL, Prometheus, and the microservices:
@@ -75,7 +88,6 @@ Before deploying services, we need to set up the required configurations and sec
 kubectl apply -f k8s/configs/kafka-configmap.yml
 kubectl apply -f k8s/configs/prometheus-configmap.yml
 kubectl apply -f k8s/configs/postgres-secrets.yml
-kubectl apply -f k8s/configs/kafka-secrets.yml
 kubectl apply -f k8s/configs/users-service-secrets.yml
 kubectl apply -f k8s/configs/orders-service-secrets.yml
 ```

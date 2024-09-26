@@ -6,7 +6,7 @@ services:
     ports:
       - "2181:2181"
 
-  kafka-1:
+  kafka:
     image: wurstmeister/kafka:latest
     ports:
       - "9092:9092"
@@ -14,11 +14,8 @@ services:
       KAFKA_BROKER_ID: 1
       KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
       KAFKA_LISTENERS: SASL_SSL://0.0.0.0:9092
-      KAFKA_ADVERTISED_LISTENERS: SASL_SSL://kafka-1:9092
-      KAFKA_DEFAULT_REPLICATION_FACTOR: 3
-      KAFKA_MIN_INSYNC_REPLICAS: 2
-      KAFKA_NUM_PARTITIONS: 3
-      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "false"
+      KAFKA_ADVERTISED_LISTENERS: SASL_SSL://kafka:9092
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
       KAFKA_SASL_ENABLED_MECHANISMS: PLAIN
       KAFKA_SASL_MECHANISM_INTER_BROKER_PROTOCOL: PLAIN
       KAFKA_SECURITY_INTER_BROKER_PROTOCOL: SASL_SSL
@@ -36,83 +33,7 @@ services:
       KAFKA_ZOOKEEPER_SET_ACL: "false"
       KAFKA_HEAP_OPTS: "-Xmx2g -Xms1g"
     volumes:
-      - ./kafka-1-data:/var/lib/kafka/data
-      - ./kafka/kafka_server_jaas.conf:/etc/kafka/kafka_server_jaas.conf
-      - ./kafka/ssl/kafka.server.keystore.jks:/etc/kafka/secrets/kafka.server.keystore.jks
-      - ./kafka/ssl/kafka.server.truststore.jks:/etc/kafka/secrets/kafka.server.truststore.jks
-      - ./kafka/ssl/ca-cert.pem:/etc/kafka/secrets/ca-cert.pem
-    depends_on:
-      - zookeeper
-
-  kafka-2:
-    image: wurstmeister/kafka:latest
-    ports:
-      - "9093:9093"
-    environment:
-      KAFKA_BROKER_ID: 2
-      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
-      KAFKA_LISTENERS: SASL_SSL://0.0.0.0:9093
-      KAFKA_ADVERTISED_LISTENERS: SASL_SSL://kafka-2:9093
-      KAFKA_DEFAULT_REPLICATION_FACTOR: 3
-      KAFKA_MIN_INSYNC_REPLICAS: 2
-      KAFKA_NUM_PARTITIONS: 3
-      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "false"
-      KAFKA_SASL_ENABLED_MECHANISMS: PLAIN
-      KAFKA_SASL_MECHANISM_INTER_BROKER_PROTOCOL: PLAIN
-      KAFKA_SECURITY_INTER_BROKER_PROTOCOL: SASL_SSL
-      KAFKA_SSL_KEYSTORE_LOCATION: /etc/kafka/secrets/kafka.server.keystore.jks
-      KAFKA_SSL_KEYSTORE_PASSWORD: kafka123
-      KAFKA_SSL_KEY_PASSWORD: kafka123
-      KAFKA_SSL_TRUSTSTORE_LOCATION: /etc/kafka/secrets/kafka.server.truststore.jks
-      KAFKA_SSL_TRUSTSTORE_PASSWORD: kafka123
-      KAFKA_SSL_CLIENT_AUTH: required
-      KAFKA_SSL_ENDPOINT_IDENTIFICATION_ALGORITHM: ""
-      KAFKA_OPTS: "-Djava.security.auth.login.config=/etc/kafka/kafka_server_jaas.conf"
-      KAFKA_AUTHORIZER_CLASS_NAME: kafka.security.authorizer.AclAuthorizer
-      KAFKA_ALLOW_EVERYONE_IF_NO_ACL_FOUND: "true"
-      ZOOKEEPER_SASL_ENABLED: "false"
-      KAFKA_ZOOKEEPER_SET_ACL: "false"
-      KAFKA_HEAP_OPTS: "-Xmx2g -Xms1g"
-    volumes:
-      - ./kafka-2-data:/var/lib/kafka/data
-      - ./kafka/kafka_server_jaas.conf:/etc/kafka/kafka_server_jaas.conf
-      - ./kafka/ssl/kafka.server.keystore.jks:/etc/kafka/secrets/kafka.server.keystore.jks
-      - ./kafka/ssl/kafka.server.truststore.jks:/etc/kafka/secrets/kafka.server.truststore.jks
-      - ./kafka/ssl/ca-cert.pem:/etc/kafka/secrets/ca-cert.pem
-    depends_on:
-      - zookeeper
-
-  kafka-3:
-    image: wurstmeister/kafka:latest
-    ports:
-      - "9094:9094"
-    environment:
-      KAFKA_BROKER_ID: 3
-      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
-      KAFKA_LISTENERS: SASL_SSL://0.0.0.0:9094
-      KAFKA_ADVERTISED_LISTENERS: SASL_SSL://kafka-3:9094
-      KAFKA_DEFAULT_REPLICATION_FACTOR: 3
-      KAFKA_MIN_INSYNC_REPLICAS: 2
-      KAFKA_NUM_PARTITIONS: 3
-      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "false"
-      KAFKA_SASL_ENABLED_MECHANISMS: PLAIN
-      KAFKA_SASL_MECHANISM_INTER_BROKER_PROTOCOL: PLAIN
-      KAFKA_SECURITY_INTER_BROKER_PROTOCOL: SASL_SSL
-      KAFKA_SSL_KEYSTORE_LOCATION: /etc/kafka/secrets/kafka.server.keystore.jks
-      KAFKA_SSL_KEYSTORE_PASSWORD: kafka123
-      KAFKA_SSL_KEY_PASSWORD: kafka123
-      KAFKA_SSL_TRUSTSTORE_LOCATION: /etc/kafka/secrets/kafka.server.truststore.jks
-      KAFKA_SSL_TRUSTSTORE_PASSWORD: kafka123
-      KAFKA_SSL_CLIENT_AUTH: required
-      KAFKA_SSL_ENDPOINT_IDENTIFICATION_ALGORITHM: ""
-      KAFKA_OPTS: "-Djava.security.auth.login.config=/etc/kafka/kafka_server_jaas.conf"
-      KAFKA_AUTHORIZER_CLASS_NAME: kafka.security.authorizer.AclAuthorizer
-      KAFKA_ALLOW_EVERYONE_IF_NO_ACL_FOUND: "true"
-      ZOOKEEPER_SASL_ENABLED: "false"
-      KAFKA_ZOOKEEPER_SET_ACL: "false"
-      KAFKA_HEAP_OPTS: "-Xmx2g -Xms1g"
-    volumes:
-      - ./kafka-2-data:/var/lib/kafka/data
+      - ./kafka-data:/var/lib/kafka/data
       - ./kafka/kafka_server_jaas.conf:/etc/kafka/kafka_server_jaas.conf
       - ./kafka/ssl/kafka.server.keystore.jks:/etc/kafka/secrets/kafka.server.keystore.jks
       - ./kafka/ssl/kafka.server.truststore.jks:/etc/kafka/secrets/kafka.server.truststore.jks
@@ -123,16 +44,13 @@ services:
   kafka-acl-setup:
     image: wurstmeister/kafka:latest
     depends_on:
-      - kafka-1
-      - kafka-2
-      - kafka-3
+      - kafka
     environment:
       KAFKA_OPTS: "-Djava.security.auth.login.config=/etc/kafka/kafka_server_jaas.conf"
     volumes:
       - ./kafka/kafka_server_jaas.conf:/etc/kafka/kafka_server_jaas.conf
     command: >
       bash -c "
-        kafka-topics.sh --create --if-not-exists --zookeeper zookeeper:2181 --topic order-created --partitions 3 --replication-factor 3
         kafka-acls.sh --authorizer-properties zookeeper.connect=zookeeper:2181 --add --allow-principal User:order-service --producer --topic orders
         kafka-acls.sh --authorizer-properties zookeeper.connect=zookeeper:2181 --add --allow-principal User:user-service --consumer --topic orders --group user-group
         kafka-acls.sh --authorizer-properties zookeeper.connect=zookeeper:2181 --add --allow-principal User:kafka-exporter --operation Describe --group user-group
@@ -145,9 +63,7 @@ services:
     ports:
       - "9308:9308"
     command:
-      - '--kafka.server=kafka-1:9092'
-      - '--kafka.server=kafka-2:9093'
-      - '--kafka.server=kafka-3:9094'
+      - '--kafka.server=kafka:9092'
       - '--sasl.enabled'
       - '--sasl.username=kafka-exporter'
       - '--sasl.password=kafka-exporter-secret'
@@ -164,9 +80,7 @@ services:
       - ./kafka/ssl/kafka-exporter-key.pem:/etc/kafka/secrets/kafka-exporter-key.pem
       - ./kafka/ssl/kafka-exporter-certificate.pem:/etc/kafka/secrets/kafka-exporter-certificate.pem
     depends_on:
-      - kafka-1
-      - kafka-2
-      - kafka-3
+      - kafka
     restart: always
 
   prometheus:
@@ -226,9 +140,7 @@ services:
       - "3001:3001"
     depends_on:
       - mongo-users
-      - kafka-1
-      - kafka-2
-      - kafka-3
+      - kafka
     volumes:
       - ./kafka/ssl/ca-cert.pem:/etc/kafka/secrets/ca-cert.pem
       - ./kafka/ssl/users-service-key.pem:/etc/kafka/secrets/users-service-key.pem
@@ -240,9 +152,7 @@ services:
       - "3002:3002"
     depends_on:
       - postgres
-      - kafka-1
-      - kafka-2
-      - kafka-3
+      - kafka
     environment:
       POSTGRES_HOST: postgres
       POSTGRES_PORT: 5432
