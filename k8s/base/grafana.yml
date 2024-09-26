@@ -29,6 +29,7 @@ metadata:
   name: grafana
   namespace: microservices
 spec:
+  type: LoadBalancer
   ports:
     - port: 3000
   selector:

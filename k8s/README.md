@@ -88,6 +88,7 @@ Before deploying services, we need to set up the required configurations and sec
 kubectl apply -f k8s/configs/kafka-configmap.yml
 kubectl apply -f k8s/configs/prometheus-configmap.yml
 kubectl apply -f k8s/configs/postgres-secrets.yml
+kubectl apply -f k8s/configs/kafka-exporter-secrets.yml
 kubectl apply -f k8s/configs/users-service-secrets.yml
 kubectl apply -f k8s/configs/orders-service-secrets.yml
 ```
@@ -143,6 +144,12 @@ Get the services and external IPs:
 
 ```bash
 kubectl get svc -n microservices
+```
+
+Check Health:
+
+```bash
+kubectl get pods -n microservices
 ```
 
 Access the services locally:
