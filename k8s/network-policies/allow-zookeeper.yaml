@@ -1,0 +1,16 @@
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-kafka-to-zookeeper
+  namespace: microservices
+spec:
+  podSelector:
+    matchLabels:
+      app: zookeeper
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app: kafka
+  policyTypes:
+    - Ingress

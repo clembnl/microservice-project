@@ -13,6 +13,14 @@ spec:
       labels:
         app: prometheus
     spec:
+      # Pod-level Security Context
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 65534            # Non-root UID
+        runAsGroup: 65534           # Non-root GID
+        fsGroup: 65534              # Ensure Prometheus can write to its mounted volume
+        seccompProfile:
+          type: RuntimeDefault
       containers:
         - name: prometheus
           image: prom/prometheus:latest
@@ -25,6 +33,13 @@ spec:
               mountPath: /etc/prometheus/
             - name: prometheus-storage
               mountPath: /prometheus
+          # Container-level Security Context
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+            readOnlyRootFilesystem: true
       volumes:
         - name: prometheus-config
           configMap:

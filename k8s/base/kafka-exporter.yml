@@ -13,6 +13,14 @@ spec:
       labels:
         app: kafka-exporter
     spec:
+      # Pod-level Security Context
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000            # Non-root UID
+        runAsGroup: 1000           # Non-root GID
+        fsGroup: 2000              # File system group
+        seccompProfile:
+          type: RuntimeDefault
       containers:
         - name: kafka-exporter
           image: danielqsj/kafka-exporter:latest
@@ -35,6 +43,13 @@ spec:
             - name: kafka-exporter-secrets
               mountPath: /etc/kafka/secrets
               readOnly: true
+          # Container-level Security Context
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+            readOnlyRootFilesystem: true
       volumes:
         - name: kafka-exporter-secrets
           secret:

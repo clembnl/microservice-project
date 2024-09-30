@@ -13,6 +13,14 @@ spec:
       labels:
         app: grafana
     spec:
+      # Pod-level Security Context
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000            # Non-root UID
+        runAsGroup: 1000           # Non-root GID
+        fsGroup: 2000              # File system group
+        seccompProfile:
+          type: RuntimeDefault
       containers:
         - name: grafana
           image: grafana/grafana:latest
@@ -21,7 +29,20 @@ spec:
               value: "admin"
           ports:
             - containerPort: 3000
-      volumes: []
+          volumeMounts:
+            - name: grafana-storage
+              mountPath: /var/lib/grafana  # Mount PVC here for writable storage
+          # Container-level Security Context
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+            readOnlyRootFilesystem: true
+      volumes:
+        - name: grafana-storage
+          persistentVolumeClaim:
+            claimName: grafana-pvc  # This is the PVC for persistent storage
 ---
 apiVersion: v1
 kind: Service

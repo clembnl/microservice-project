@@ -13,13 +13,28 @@ spec:
       labels:
         app: users-service
     spec:
+      # Pod-level Security Context
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000            # Non-root UID
+        runAsGroup: 1000           # Non-root GID
+        fsGroup: 2000              # File system group
+        seccompProfile:
+          type: RuntimeDefault
       initContainers:
         - name: wait-for-mongo
           image: busybox
           command: ['sh', '-c', 'until nc -z mongo-users.microservices.svc.cluster.local 27017; do echo waiting for mongo-users; sleep 10; done']
+          # Container-level Security Context
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+            readOnlyRootFilesystem: true
       containers:
         - name: users-service
-          image: clementbonal/microservice-project_users-service:v1.1
+          image: clementbonal/microservice-project_users-service:v2
           ports:
             - containerPort: 3001
           env:
@@ -31,6 +46,13 @@ spec:
             - name: kafka-client-secrets
               mountPath: /etc/kafka/secrets
               readOnly: true
+          # Container-level Security Context
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+            readOnlyRootFilesystem: true
       volumes:
         - name: kafka-client-secrets
           secret:

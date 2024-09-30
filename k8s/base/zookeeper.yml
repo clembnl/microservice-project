@@ -13,11 +13,40 @@ spec:
       labels:
         app: zookeeper
     spec:
+      # Pod-level Security Context
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000            # Non-root UID
+        runAsGroup: 1000           # Non-root GID
+        fsGroup: 1000              # Set fsGroup to allow access to mounted volumes
+        seccompProfile:
+          type: RuntimeDefault
       containers:
         - name: zookeeper
-          image: wurstmeister/zookeeper:latest
+          image: bitnami/zookeeper:latest
           ports:
             - containerPort: 2181
+          env:
+            - name: ALLOW_ANONYMOUS_LOGIN
+              value: "yes"
+          volumeMounts:
+            - name: zookeeper-storage
+              mountPath: /bitnami/zookeeper  # For persistent data storage
+            - name: zookeeper-config
+              mountPath: /opt/bitnami/zookeeper/conf  # Writable configuration directory
+          # Container-level Security Context
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+            # Remove readOnlyRootFilesystem to allow writable access for config/data directories
+      volumes:
+        - name: zookeeper-storage
+          persistentVolumeClaim:
+            claimName: zookeeper-pvc
+        - name: zookeeper-config
+          emptyDir: {}  # Use an emptyDir volume for writable config files (non-persistent)
 ---
 apiVersion: v1
 kind: Service

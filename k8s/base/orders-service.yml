@@ -13,13 +13,28 @@ spec:
       labels:
         app: orders-service
     spec:
+      # Pod-level Security Context
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000            # Non-root UID
+        runAsGroup: 1000           # Non-root GID
+        fsGroup: 2000              # File system group
+        seccompProfile:
+          type: RuntimeDefault
       initContainers:
         - name: wait-for-postgres
           image: busybox
           command: ['sh', '-c', 'until nc -z postgres.microservices.svc.cluster.local 5432; do echo waiting for postgres; sleep 10; done']
+          # Container-level Security Context
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+            readOnlyRootFilesystem: true
       containers:
         - name: orders-service
-          image: clementbonal/microservice-project_orders-service:v1.2
+          image: clementbonal/microservice-project_orders-service:v2
           ports:
             - containerPort: 3002
           env:
@@ -48,6 +63,13 @@ spec:
             - name: kafka-client-secrets
               mountPath: /etc/kafka/secrets
               readOnly: true
+          # Container-level Security Context
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+            readOnlyRootFilesystem: true
       volumes:
         - name: kafka-client-secrets
           secret:

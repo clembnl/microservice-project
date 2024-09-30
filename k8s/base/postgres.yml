@@ -13,6 +13,14 @@ spec:
       labels:
         app: postgres
     spec:
+      # Pod-level Security Context
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 999            # Non-root UID
+        runAsGroup: 999           # Non-root GID
+        fsGroup: 999              # File system group
+        seccompProfile:
+          type: RuntimeDefault
       containers:
         - name: postgres
           image: postgres:13
@@ -37,6 +45,13 @@ spec:
           volumeMounts:
             - name: postgres-storage
               mountPath: /var/lib/postgresql/data
+          # Container-level Security Context
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+            # Removed readOnlyRootFilesystem to allow writes to data directory
       volumes:
         - name: postgres-storage
           persistentVolumeClaim:

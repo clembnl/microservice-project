@@ -1,0 +1,16 @@
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-mongo-users
+  namespace: microservices
+spec:
+  podSelector:
+    matchLabels:
+      app: mongo-users
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app: users-service
+  policyTypes:
+    - Ingress
