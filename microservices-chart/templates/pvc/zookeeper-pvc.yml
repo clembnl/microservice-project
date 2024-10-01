@@ -1,0 +1,15 @@
+# templates/zookeeper-pvc.yaml
+{{- if .Values.zookeeper.storage.enabled }}
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: zookeeper-pvc
+  namespace: {{ .Release.Namespace }}
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: {{ .Values.zookeeper.storage.size }}
+  storageClassName: standard  # Adjust as necessary for your environment
+{{- end }}

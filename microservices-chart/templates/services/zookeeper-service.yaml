@@ -1,0 +1,11 @@
+# templates/zookeeper-service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: zookeeper
+  namespace: {{ .Release.Namespace }}
+spec:
+  ports:
+    - port: {{ .Values.zookeeper.ports.service }}
+  selector:
+    app: zookeeper

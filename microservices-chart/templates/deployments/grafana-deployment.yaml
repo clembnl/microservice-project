@@ -1,0 +1,43 @@
+# templates/deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Release.Name }}-grafana
+  namespace: {{ .Release.Namespace }}
+spec:
+  replicas: {{ .Values.grafana.replicaCount }}
+  selector:
+    matchLabels:
+      app: grafana
+  template:
+    metadata:
+      labels:
+        app: grafana
+    spec:
+      securityContext:
+        runAsNonRoot: {{ .Values.grafana.securityContext.podLevel.runAsNonRoot }}
+        runAsUser: {{ .Values.grafana.securityContext.podLevel.runAsUser }}
+        runAsGroup: {{ .Values.grafana.securityContext.podLevel.runAsGroup }}
+        fsGroup: {{ .Values.grafana.securityContext.podLevel.fsGroup }}
+        seccompProfile:
+          type: {{ .Values.grafana.securityContext.podLevel.seccompProfile.type }}
+      containers:
+        - name: grafana
+          image: "{{ .Values.grafana.image.repository }}:{{ .Values.grafana.image.tag }}"
+          env:
+            - name: GF_SECURITY_ADMIN_PASSWORD
+              value: {{ .Values.grafana.adminPassword }}
+          ports:
+            - containerPort: {{ .Values.grafana.service.port }}
+          volumeMounts:
+            - name: grafana-storage
+              mountPath: /var/lib/grafana
+          securityContext:
+            allowPrivilegeEscalation: {{ .Values.grafana.securityContext.containerLevel.allowPrivilegeEscalation }}
+            capabilities:
+              drop: {{- toYaml .Values.grafana.securityContext.containerLevel.capabilities.drop | nindent 16 }}
+            readOnlyRootFilesystem: {{ .Values.grafana.securityContext.containerLevel.readOnlyRootFilesystem }}
+      volumes:
+        - name: grafana-storage
+          persistentVolumeClaim:
+            claimName: {{ .Release.Name }}-grafana-pvc

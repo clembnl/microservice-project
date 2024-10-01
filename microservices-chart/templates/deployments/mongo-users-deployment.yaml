@@ -1,0 +1,41 @@
+# templates/mongo-users-deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Release.Name }}-mongo-users
+  namespace: {{ .Release.Namespace }}
+spec:
+  replicas: {{ .Values.mongoUsers.replicas }}
+  selector:
+    matchLabels:
+      app: mongo-users
+  template:
+    metadata:
+      labels:
+        app: mongo-users
+    spec:
+      securityContext:
+        runAsNonRoot: {{ .Values.mongoUsers.securityContext.runAsNonRoot }}
+        runAsUser: {{ .Values.mongoUsers.securityContext.runAsUser }}
+        runAsGroup: {{ .Values.mongoUsers.securityContext.runAsGroup }}
+        fsGroup: {{ .Values.mongoUsers.securityContext.fsGroup }}
+      containers:
+        - name: mongo-users
+          image: "{{ .Values.mongoUsers.image.repository }}:{{ .Values.mongoUsers.image.tag }}"
+          imagePullPolicy: {{ .Values.mongoUsers.image.pullPolicy }}
+          env:
+            - name: MONGO_INITDB_DATABASE
+              value: users_db
+          ports:
+            - containerPort: {{ .Values.mongoUsers.ports.mongo }}
+          volumeMounts:
+            - name: mongo-users-storage
+              mountPath: /data/db
+          securityContext:
+            allowPrivilegeEscalation: {{ .Values.mongoUsers.securityContext.allowPrivilegeEscalation }}
+            capabilities:
+              drop: {{ toJson .Values.mongoUsers.securityContext.capabilities.drop }}
+      volumes:
+        - name: mongo-users-storage
+          persistentVolumeClaim:
+            claimName: mongo-users-pvc

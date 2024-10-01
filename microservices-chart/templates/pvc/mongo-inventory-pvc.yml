@@ -1,0 +1,14 @@
+# templates/mongo-inventory-pvc.yaml
+{{- if .Values.mongoInventory.storage.enabled }}
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: mongo-inventory-pvc
+  namespace: {{ .Release.Namespace }}
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: {{ .Values.mongoInventory.storage.size }}
+{{- end }}

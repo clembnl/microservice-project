@@ -1,0 +1,14 @@
+# templates/mongo-users-pvc.yaml
+{{- if .Values.mongoUsers.storage.enabled }}
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: mongo-users-pvc
+  namespace: {{ .Release.Namespace }}
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: {{ .Values.mongoUsers.storage.size }}
+{{- end }}

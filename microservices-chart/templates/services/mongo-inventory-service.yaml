@@ -1,0 +1,11 @@
+# templates/mongo-inventory-service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Release.Name }}-mongo-inventory
+  namespace: {{ .Release.Namespace }}
+spec:
+  ports:
+    - port: {{ .Values.mongoInventory.ports.mongo }}
+  selector:
+    app: mongo-inventory

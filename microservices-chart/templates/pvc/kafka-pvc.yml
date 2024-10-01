@@ -1,0 +1,15 @@
+# templates/kafka-pvc.yaml
+{{- if .Values.kafka.storage.enabled }}
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: kafka-pvc
+  namespace: {{ .Release.Namespace }}
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: {{ .Values.kafka.storage.size }}
+  storageClassName: standard
+{{- end }}

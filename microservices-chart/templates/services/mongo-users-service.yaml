@@ -1,0 +1,11 @@
+# templates/mongo-users-service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Release.Name }}-mongo-users
+  namespace: {{ .Release.Namespace }}
+spec:
+  ports:
+    - port: {{ .Values.mongoUsers.ports.mongo }}
+  selector:
+    app: mongo-users

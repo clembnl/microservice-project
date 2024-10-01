@@ -1,0 +1,53 @@
+# templates/users-service-deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Release.Name }}-users-service
+  namespace: {{ .Release.Namespace }}
+spec:
+  replicas: {{ .Values.usersService.replicas }}
+  selector:
+    matchLabels:
+      app: users-service
+  template:
+    metadata:
+      labels:
+        app: users-service
+    spec:
+      securityContext:
+        runAsNonRoot: {{ .Values.usersService.securityContext.runAsNonRoot }}
+        runAsUser: {{ .Values.usersService.securityContext.runAsUser }}
+        runAsGroup: {{ .Values.usersService.securityContext.runAsGroup }}
+        fsGroup: {{ .Values.usersService.securityContext.fsGroup }}
+      initContainers:
+        - name: wait-for-mongo
+          image: busybox
+          command: ['sh', '-c', 'until nc -z mongo-users.microservices.svc.cluster.local 27017; do echo waiting for mongo-users; sleep 10; done']
+          securityContext:
+            allowPrivilegeEscalation: {{ .Values.usersService.securityContext.allowPrivilegeEscalation }}
+            capabilities:
+              drop: {{ .Values.usersService.securityContext.capabilities.drop }}
+      containers:
+        - name: users-service
+          image: "{{ .Values.usersService.image.repository }}:{{ .Values.usersService.image.tag }}"
+          imagePullPolicy: {{ .Values.usersService.image.pullPolicy }}
+          ports:
+            - containerPort: {{ .Values.usersService.ports.service }}
+          env:
+            - name: MONGO_URI
+              value: {{ .Values.usersService.mongo.uri }}
+            - name: KAFKA_BROKER
+              value: "kafka:9092"
+          securityContext:
+            allowPrivilegeEscalation: {{ .Values.usersService.securityContext.allowPrivilegeEscalation }}
+            capabilities:
+              drop: {{- toYaml .Values.usersService.securityContext.capabilities.drop | nindent 16 }}
+            readOnlyRootFilesystem: true
+          volumeMounts:
+            - name: kafka-client-secrets
+              mountPath: /etc/kafka/secrets
+              readOnly: true
+      volumes:
+        - name: kafka-client-secrets
+          secret:
+            secretName: {{ .Values.usersService.kafka.secretsName }}

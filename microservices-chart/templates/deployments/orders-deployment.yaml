@@ -1,0 +1,71 @@
+# templates/orders-service-deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Release.Name }}-orders-service
+  namespace: {{ .Release.Namespace }}
+spec:
+  replicas: {{ .Values.ordersService.replicas }}
+  selector:
+    matchLabels:
+      app: orders-service
+  template:
+    metadata:
+      labels:
+        app: orders-service
+    spec:
+      securityContext:
+        runAsNonRoot: {{ .Values.ordersService.securityContext.runAsNonRoot }}
+        runAsUser: {{ .Values.ordersService.securityContext.runAsUser }}
+        runAsGroup: {{ .Values.ordersService.securityContext.runAsGroup }}
+        fsGroup: {{ .Values.ordersService.securityContext.fsGroup }}
+      initContainers:
+        - name: wait-for-postgres
+          image: busybox
+          command: ['sh', '-c', 'until nc -z {{ .Values.ordersService.secrets.postgres.user }}.microservices.svc.cluster.local 5432; do echo waiting for postgres; sleep 10; done']
+          securityContext:
+            allowPrivilegeEscalation: {{ .Values.ordersService.securityContext.allowPrivilegeEscalation }}
+            capabilities:
+              drop: {{ toJson .Values.ordersService.securityContext.capabilities.drop }}
+            readOnlyRootFilesystem: true
+      containers:
+        - name: orders-service
+          image: "{{ .Values.ordersService.image.repository }}:{{ .Values.ordersService.image.tag }}"
+          imagePullPolicy: {{ .Values.ordersService.image.pullPolicy }}
+          ports:
+            - containerPort: {{ .Values.ordersService.ports.service }}
+          env:
+            - name: POSTGRES_HOST
+              value: postgres
+            - name: POSTGRES_PORT
+              value: "5432"
+            - name: POSTGRES_USER
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.ordersService.secrets.postgres.user }}
+                  key: POSTGRES_USER
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.ordersService.secrets.postgres.user }}
+                  key: POSTGRES_PASSWORD
+            - name: POSTGRES_DB
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.ordersService.secrets.postgres.user }}
+                  key: POSTGRES_DB
+            - name: KAFKA_BROKER
+              value: kafka:9092
+          volumeMounts:
+            - name: kafka-client-secrets
+              mountPath: /etc/kafka/secrets
+              readOnly: true
+          securityContext:
+            allowPrivilegeEscalation: {{ .Values.ordersService.securityContext.allowPrivilegeEscalation }}
+            capabilities:
+              drop: {{ toJson .Values.ordersService.securityContext.capabilities.drop }}
+            readOnlyRootFilesystem: true
+      volumes:
+        - name: kafka-client-secrets
+          secret:
+            secretName: {{ .Values.ordersService.kafka.secretsName }}

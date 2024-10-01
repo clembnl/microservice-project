@@ -1,0 +1,331 @@
+# Global settings for all services
+global:
+  imagePullPolicy: IfNotPresent
+  namespace: helm-microservices
+
+grafana:
+  replicaCount: 1
+  image:
+    repository: grafana/grafana
+    tag: latest
+  securityContext:
+    podLevel:
+      runAsNonRoot: true
+      runAsUser: 1000
+      runAsGroup: 1000
+      fsGroup: 2000
+      seccompProfile:
+        type: RuntimeDefault
+    containerLevel:
+      allowPrivilegeEscalation: false
+      capabilities:
+        drop: 
+          - ALL
+      readOnlyRootFilesystem: true
+  adminPassword: admin
+  storage:
+    enabled: true
+    size: 1Gi
+  service:
+    type: LoadBalancer
+    port: 3000
+
+graphqlGateway:
+  replicaCount: 1
+  image:
+    repository: clementbonal/microservice-project_graphql
+    tag: v3
+  securityContext:
+    podLevel:
+      runAsNonRoot: true
+      runAsUser: 1000
+      runAsGroup: 1000
+      fsGroup: 2000
+      seccompProfile:
+        type: RuntimeDefault
+    containerLevel:
+      allowPrivilegeEscalation: false
+      capabilities:
+        drop:
+          - ALL
+      readOnlyRootFilesystem: true
+  env:
+    USERS_SERVICE_URL: http://users-service:3001
+    ORDERS_SERVICE_URL: http://orders-service:3002
+    INVENTORY_SERVICE_URL: http://inventory-service:3003
+  service:
+    type: LoadBalancer
+    port: 4000
+
+inventoryService:
+  replicaCount: 1
+  image:
+    repository: clementbonal/microservice-project_inventory-service
+    tag: v2
+  mongo:
+    uri: mongodb://mongo-inventory:27017/inventory_db
+  securityContext:
+    podLevel:
+      runAsNonRoot: true
+      runAsUser: 1000
+      runAsGroup: 1000
+      fsGroup: 2000
+      seccompProfile:
+        type: RuntimeDefault
+    containerLevel:
+      allowPrivilegeEscalation: false
+      capabilities:
+        drop:
+          - ALL
+      readOnlyRootFilesystem: true
+  service:
+    type: ClusterIP
+    port: 3003
+
+kafkaAclSetup:
+  image:
+    repository: wurstmeister/kafka
+    tag: latest
+  zookeeper:
+    host: zookeeper:2181
+  aclSetup:
+    commands:
+      - kafka-acls.sh --authorizer-properties zookeeper.connect={{ .Values.zookeeper.host }} --add --allow-principal User:order-service --producer --topic order-created
+      - kafka-acls.sh --authorizer-properties zookeeper.connect={{ .Values.zookeeper.host }} --add --allow-principal User:user-service --consumer --topic order-created --group user-group
+  kafka:
+    jaasConfig:
+      kafka_opts: "-Djava.security.auth.login.config=/etc/kafka/secrets/kafka_server_jaas.conf"
+  secrets:
+    kafkaSecretName: kafka-secrets
+  restartPolicy: OnFailure
+
+kafkaExporter:
+  image:
+    repository: danielqsj/kafka-exporter
+    tag: latest
+  kafkaServer: kafka:9092
+  sasl:
+    username: kafka-exporter
+    password: kafka-exporter-secret
+    mechanism: PLAIN
+  tls:
+    caFile: /etc/kafka/secrets/ca-cert.pem
+    certFile: /etc/kafka/secrets/kafka-exporter-certificate.pem
+    keyFile: /etc/kafka/secrets/kafka-exporter-key.pem
+  ports:
+    exporter: 9308
+  secrets:
+    secretName: kafka-exporter-secrets
+  securityContext:
+    runAsNonRoot: true
+    runAsUser: 1000
+    runAsGroup: 1000
+    fsGroup: 2000
+    allowPrivilegeEscalation: false
+    capabilities:
+      drop: ["ALL"]
+    readOnlyRootFilesystem: true
+  volumes:
+    kafkaExporterSecrets: kafka-exporter-secrets
+
+kafka:
+  image:
+    repository: wurstmeister/kafka
+    tag: latest
+  replicas: 1
+  ports:
+    kafka: 9092
+  storage:
+    enabled: true
+    size: 2Gi
+  config:
+    enabled: true
+    configMapName: kafka-config
+  securityContext:
+    runAsNonRoot: true
+    runAsUser: 1000
+    runAsGroup: 1000
+    fsGroup: 2000
+    allowPrivilegeEscalation: false
+    capabilities:
+      drop: ["ALL"]
+    readOnlyRootFilesystem: false
+  secrets:
+    secretName: kafka-secrets
+
+mongoInventory:
+  image:
+    repository: mongo
+    tag: 4.4
+  replicas: 1
+  ports:
+    mongo: 27017
+  storage:
+    enabled: true
+    size: 1Gi
+  securityContext:
+    runAsNonRoot: true
+    runAsUser: 999
+    runAsGroup: 999
+    fsGroup: 999
+    allowPrivilegeEscalation: false
+    capabilities:
+      drop: ["ALL"]
+
+mongoUsers:
+  image:
+    repository: mongo
+    tag: 4.4
+  replicas: 1
+  ports:
+    mongo: 27017
+  storage:
+    enabled: true
+    size: 1Gi
+  securityContext:
+    runAsNonRoot: true
+    runAsUser: 999
+    runAsGroup: 999
+    fsGroup: 999
+    allowPrivilegeEscalation: false
+    capabilities:
+      drop: ["ALL"]
+
+ordersService:
+  image:
+    repository: clementbonal/microservice-project_orders-service
+    tag: v2
+  replicas: 1
+  ports:
+    service: 3002
+  secrets:
+    postgres:
+      user: postgres-secrets
+      password: POSTGRES_PASSWORD
+      db: POSTGRES_DB
+  kafka:
+    secretsName: orders-service-kafka-secrets
+  securityContext:
+    runAsNonRoot: true
+    runAsUser: 1000
+    runAsGroup: 1000
+    fsGroup: 2000
+    allowPrivilegeEscalation: false
+    capabilities:
+      drop: ["ALL"]
+
+postgres:
+  image:
+    repository: postgres
+    tag: "13"
+  replicas: 1
+  ports:
+    service: 5432
+  secrets:
+    secretName: postgres-secrets
+  storage:
+    enabled: true
+    size: 1Gi
+  securityContext:
+    runAsNonRoot: true
+    runAsUser: 999
+    runAsGroup: 999
+    fsGroup: 999
+    allowPrivilegeEscalation: false
+    capabilities:
+      drop: ["ALL"]
+    readOnlyRootFilesystem: false  # Allow writes to data directory
+
+prometheus:
+  image:
+    repository: prom/prometheus
+    tag: "latest"
+  replicas: 1
+  ports:
+    service: 9090
+  storage:
+    enabled: true
+    size: 2Gi
+  config:
+    enabled: true
+    configMapName: prometheus-config
+  securityContext:
+    runAsNonRoot: true
+    runAsUser: 65534
+    runAsGroup: 65534
+    fsGroup: 65534
+    allowPrivilegeEscalation: false
+    capabilities:
+      drop: ["ALL"]
+
+usersService:
+  image:
+    repository: clementbonal/microservice-project_users-service
+    tag: v2
+  replicas: 1
+  ports:
+    service: 3001
+  storage:
+    enabled: true
+    size: 1Gi
+  securityContext:
+    runAsNonRoot: true
+    runAsUser: 1000
+    runAsGroup: 1000
+    fsGroup: 2000
+    allowPrivilegeEscalation: false
+    capabilities:
+      drop: ["ALL"]
+  mongo:
+    uri: "mongodb://mongo-users:27017/users_db"
+  kafka:
+    secretsName: users-service-kafka-secrets
+
+zookeeper:
+  image:
+    repository: bitnami/zookeeper
+    tag: latest
+  replicas: 1
+  ports:
+    service: 2181
+  storage:
+    enabled: true
+    size: 2Gi
+  securityContext:
+    runAsNonRoot: true
+    runAsUser: 1000
+    runAsGroup: 1000
+    fsGroup: 1000
+    allowPrivilegeEscalation: false
+    capabilities:
+      drop: ["ALL"]
+  allowAnonymousLogin: true
+
+# Network Policies
+networkPolicies:
+  denyAllIngress:
+    enabled: true
+  allowGrafana:
+    enabled: true
+  allowGraphQL:
+    enabled: true
+  allowKafkaExporter:
+    enabled: true
+  allowKafka:
+    enabled: true
+  allowMongoInventory:
+    enabled: true
+  allowMongoUsers:
+    enabled: true
+  allowOrdersService:
+    enabled: true
+  allowPostgres:
+    enabled: true
+  allowPrometheus:
+    enabled: true
+  allowZookeeper:
+    enabled: true
+  allowInventoryService:
+    enabled: true
+  allowUsersService:
+    enabled: true

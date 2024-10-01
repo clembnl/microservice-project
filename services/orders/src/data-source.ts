@@ -1,6 +1,6 @@
 import 'reflect-metadata';
 import { DataSource } from 'typeorm';
-import { OrderEntity } from './orderEntity';
+import { OrderEntity } from './orderModel';
 
 export const AppDataSource = new DataSource({
   type: 'postgres',

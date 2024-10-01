@@ -1,0 +1,40 @@
+# templates/deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Release.Name }}-graphql-gateway
+  namespace: {{ .Release.Namespace }}
+spec:
+  replicas: {{ .Values.graphqlGateway.replicaCount }}
+  selector:
+    matchLabels:
+      app: graphql-gateway
+  template:
+    metadata:
+      labels:
+        app: graphql-gateway
+    spec:
+      securityContext:
+        runAsNonRoot: {{ .Values.graphqlGateway.securityContext.podLevel.runAsNonRoot }}
+        runAsUser: {{ .Values.graphqlGateway.securityContext.podLevel.runAsUser }}
+        runAsGroup: {{ .Values.graphqlGateway.securityContext.podLevel.runAsGroup }}
+        fsGroup: {{ .Values.graphqlGateway.securityContext.podLevel.fsGroup }}
+        seccompProfile:
+          type: {{ .Values.graphqlGateway.securityContext.podLevel.seccompProfile.type }}
+      containers:
+        - name: graphql-gateway
+          image: "{{ .Values.graphqlGateway.image.repository }}:{{ .Values.graphqlGateway.image.tag }}"
+          ports:
+            - containerPort: {{ .Values.graphqlGateway.service.port }}
+          env:
+            - name: USERS_SERVICE_URL
+              value: {{ .Values.graphqlGateway.env.USERS_SERVICE_URL }}
+            - name: ORDERS_SERVICE_URL
+              value: {{ .Values.graphqlGateway.env.ORDERS_SERVICE_URL }}
+            - name: INVENTORY_SERVICE_URL
+              value: {{ .Values.graphqlGateway.env.INVENTORY_SERVICE_URL }}
+          securityContext:
+            allowPrivilegeEscalation: {{ .Values.graphqlGateway.securityContext.containerLevel.allowPrivilegeEscalation }}
+            capabilities:
+              drop: {{- toYaml .Values.graphqlGateway.securityContext.containerLevel.capabilities.drop | nindent 16 }}
+            readOnlyRootFilesystem: {{ .Values.graphqlGateway.securityContext.containerLevel.readOnlyRootFilesystem }}

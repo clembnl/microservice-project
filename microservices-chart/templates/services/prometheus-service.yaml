@@ -1,0 +1,11 @@
+# templates/prometheus-service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Release.Name }}-prometheus
+  namespace: {{ .Release.Namespace }}
+spec:
+  ports:
+    - port: {{ .Values.prometheus.ports.service }}
+  selector:
+    app: prometheus
