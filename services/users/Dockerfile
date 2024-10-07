@@ -18,9 +18,6 @@ RUN npm run build
 # Stage 2: Run the application
 FROM node:18-alpine
 
-# Create a non-root user and group
-RUN addgroup -S appgroup && adduser -S appuser -G appgroup
-
 # Set working directory
 WORKDIR /app
 
@@ -30,12 +27,6 @@ COPY package.json ./
 
 # Install production dependencies
 RUN npm install --only=production
-
-# Change ownership of app directory
-RUN chown -R appuser:appgroup /app
-
-# Switch to non-root user
-USER appuser
 
 # Expose port
 EXPOSE 3001

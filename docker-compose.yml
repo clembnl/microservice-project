@@ -1,107 +1,6 @@
 version: '3.8'
 
 services:
-  zookeeper:
-    image: wurstmeister/zookeeper:3.4.6
-    ports:
-      - "2181:2181"
-
-  kafka:
-    image: wurstmeister/kafka:latest
-    ports:
-      - "9092:9092"
-    environment:
-      KAFKA_BROKER_ID: 1
-      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
-      KAFKA_LISTENERS: SASL_SSL://0.0.0.0:9092
-      KAFKA_ADVERTISED_LISTENERS: SASL_SSL://kafka:9092
-      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
-      KAFKA_SASL_ENABLED_MECHANISMS: PLAIN
-      KAFKA_SASL_MECHANISM_INTER_BROKER_PROTOCOL: PLAIN
-      KAFKA_SECURITY_INTER_BROKER_PROTOCOL: SASL_SSL
-      KAFKA_SSL_KEYSTORE_LOCATION: /etc/kafka/secrets/kafka.server.keystore.jks
-      KAFKA_SSL_KEYSTORE_PASSWORD: kafka123
-      KAFKA_SSL_KEY_PASSWORD: kafka123
-      KAFKA_SSL_TRUSTSTORE_LOCATION: /etc/kafka/secrets/kafka.server.truststore.jks
-      KAFKA_SSL_TRUSTSTORE_PASSWORD: kafka123
-      KAFKA_SSL_CLIENT_AUTH: required
-      KAFKA_SSL_ENDPOINT_IDENTIFICATION_ALGORITHM: ""
-      KAFKA_OPTS: "-Djava.security.auth.login.config=/etc/kafka/kafka_server_jaas.conf"
-      KAFKA_AUTHORIZER_CLASS_NAME: kafka.security.authorizer.AclAuthorizer
-      KAFKA_ALLOW_EVERYONE_IF_NO_ACL_FOUND: "true"
-      ZOOKEEPER_SASL_ENABLED: "false"
-      KAFKA_ZOOKEEPER_SET_ACL: "false"
-      KAFKA_HEAP_OPTS: "-Xmx2g -Xms1g"
-    volumes:
-      - ./kafka-data:/var/lib/kafka/data
-      - ./kafka/kafka_server_jaas.conf:/etc/kafka/kafka_server_jaas.conf
-      - ./kafka/ssl/kafka.server.keystore.jks:/etc/kafka/secrets/kafka.server.keystore.jks
-      - ./kafka/ssl/kafka.server.truststore.jks:/etc/kafka/secrets/kafka.server.truststore.jks
-      - ./kafka/ssl/ca-cert.pem:/etc/kafka/secrets/ca-cert.pem
-    depends_on:
-      - zookeeper
-
-  kafka-acl-setup:
-    image: wurstmeister/kafka:latest
-    depends_on:
-      - kafka
-    environment:
-      KAFKA_OPTS: "-Djava.security.auth.login.config=/etc/kafka/kafka_server_jaas.conf"
-    volumes:
-      - ./kafka/kafka_server_jaas.conf:/etc/kafka/kafka_server_jaas.conf
-    command: >
-      bash -c "
-        kafka-acls.sh --authorizer-properties zookeeper.connect=zookeeper:2181 --add --allow-principal User:order-service --producer --topic orders
-        kafka-acls.sh --authorizer-properties zookeeper.connect=zookeeper:2181 --add --allow-principal User:user-service --consumer --topic orders --group user-group
-        kafka-acls.sh --authorizer-properties zookeeper.connect=zookeeper:2181 --add --allow-principal User:kafka-exporter --operation Describe --group user-group
-        kafka-acls.sh --authorizer-properties zookeeper.connect=zookeeper:2181 --add --allow-principal User:kafka-exporter --operation Describe --topic orders
-        echo 'ACLs have been set up.'
-      "
-
-  kafka-exporter:
-    image: danielqsj/kafka-exporter:latest
-    ports:
-      - "9308:9308"
-    command:
-      - '--kafka.server=kafka:9092'
-      - '--sasl.enabled'
-      - '--sasl.username=kafka-exporter'
-      - '--sasl.password=kafka-exporter-secret'
-      - '--sasl.mechanism=PLAIN'
-      - '--tls.enabled'
-      - '--tls.ca-file=/etc/kafka/secrets/ca-cert.pem'
-      - '--tls.cert-file=/etc/kafka/secrets/kafka-exporter-certificate.pem'
-      - '--tls.key-file=/etc/kafka/secrets/kafka-exporter-key.pem'
-      - '--tls.insecure-skip-tls-verify'
-      - '--topic.filter=^order-created$$'
-      - '--log.level=info'
-    volumes:
-      - ./kafka/ssl/ca-cert.pem:/etc/kafka/secrets/ca-cert.pem
-      - ./kafka/ssl/kafka-exporter-key.pem:/etc/kafka/secrets/kafka-exporter-key.pem
-      - ./kafka/ssl/kafka-exporter-certificate.pem:/etc/kafka/secrets/kafka-exporter-certificate.pem
-    depends_on:
-      - kafka
-    restart: always
-
-  prometheus:
-    image: prom/prometheus:latest
-    volumes:
-      - ./kafka/prometheus.yml:/etc/prometheus/prometheus.yml
-      - prometheus-data:/prometheus
-    ports:
-      - "9090:9090"
-
-  grafana:
-    image: grafana/grafana:latest
-    ports:
-      - "3000:3000"
-    depends_on:
-      - prometheus
-    environment:
-      - GF_SECURITY_ADMIN_PASSWORD=admin
-    volumes:
-      - grafana-storage:/var/lib/grafana
-
   postgres:
     image: postgres:13
     container_name: postgres-db
@@ -140,11 +39,6 @@ services:
       - "3001:3001"
     depends_on:
       - mongo-users
-      - kafka
-    volumes:
-      - ./kafka/ssl/ca-cert.pem:/etc/kafka/secrets/ca-cert.pem
-      - ./kafka/ssl/users-service-key.pem:/etc/kafka/secrets/users-service-key.pem
-      - ./kafka/ssl/users-service-certificate.pem:/etc/kafka/secrets/users-service-certificate.pem
 
   orders-service:
     build: ./services/orders
@@ -152,17 +46,12 @@ services:
       - "3002:3002"
     depends_on:
       - postgres
-      - kafka
     environment:
       POSTGRES_HOST: postgres
       POSTGRES_PORT: 5432
       POSTGRES_USER: myuser
       POSTGRES_PASSWORD: mypassword
       POSTGRES_DB: orders_db
-    volumes:
-      - ./kafka/ssl/ca-cert.pem:/etc/kafka/secrets/ca-cert.pem
-      - ./kafka/ssl/orders-service-key.pem:/etc/kafka/secrets/orders-service-key.pem
-      - ./kafka/ssl/orders-service-certificate.pem:/etc/kafka/secrets/orders-service-certificate.pem
 
   inventory-service:
     build: ./services/inventory
@@ -177,8 +66,6 @@ services:
       - "4000:4000"
 
 volumes:
-  prometheus-data:
-  grafana-storage:
   postgres-data:
   mongo-users-data:
   mongo-inventory-data:
