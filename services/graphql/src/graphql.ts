@@ -53,7 +53,7 @@ const typeDefs = gql`
 `;
 
 // DataLoader instances to batch and cache requests
-const orderLoader = new DataLoader<string, Order[]>(async (userIds) => {
+const orderLoader = new DataLoader<string, Order[]>(async (userIds: readonly string[]) => {
   try {
     const response = await axios.get(`http://orders-service:3002/orders`, {
       params: { userIds: userIds.join(',') }
@@ -115,7 +115,7 @@ const resolvers = {
                   });
           
                   // Remove any null products or throw an error if necessary
-                  const nonNullOrders = resolvedOrders.filter(order => order !== null);
+                  const nonNullOrders = resolvedOrders.filter((order: Order) => order !== null);
                   
                   // Return the order with associated non-null products
                   return { ...user, id: user._id, orders: nonNullOrders };
@@ -151,7 +151,7 @@ const resolvers = {
           });
 
           // Remove any null products or throw an error if necessary
-          const nonNullProducts = resolvedProducts.filter(product => product !== null);
+          const nonNullProducts = resolvedProducts.filter((product: Product) => product !== null);
           
           // Return the order with associated non-null products
           return { ...order, products: nonNullProducts };
@@ -200,7 +200,7 @@ const resolvers = {
       });
 
       // Remove any null products or throw an error if necessary
-      const nonNullProducts = resolvedProducts.filter(product => product !== null);
+      const nonNullProducts = resolvedProducts.filter((product: Product) => product !== null);
 
        // Calculate the total price
       const total = (nonNullProducts as Product[]).reduce((sum, product) => sum + (product?.price || 0), 0);
@@ -212,6 +212,9 @@ const resolvers = {
         total,
         status: 'pending'
       });
+
+      // Clear the cache for this user's orders after creating a new order
+      orderLoader.clear(userId);
 
       return { ...orderResponse.data, products: nonNullProducts };
     },
