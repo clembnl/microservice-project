@@ -36,7 +36,7 @@ To run all the services along with their databases locally, follow these steps:
    ```bash
    git clone https://github.com/clembnl/microservice-project.git
    cd microservice-project
-   git checkout module1
+   git checkout module2
    ```
 
 2. **Build and Start the Services**:
