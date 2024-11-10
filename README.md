@@ -1,13 +1,6 @@
 # Microservices Project - Module 2
 
 This project demonstrates an enhanced microservices architecture built using **Node.js**, **TypeScript**, and **GraphQL**. It consists of four microservices: **Inventory**, **Orders**, **Users**, and **GraphQL**, each connected to its respective database. The services are dockerized and deployed locally using **Docker Compose**.
-1. **Inventory Service** (MongoDB)
-2. **Orders Service** (PostgreSQL)
-3. **Users Service** (MongoDB)
-4. **GraphQL Gateway**: Combines APIs of microservices via GraphQL (available at port `4000`).
-5. **Kafka**: Message broker for inter-service communication.
-6. **Prometheus**: Monitoring for Kafka and microservices.
-7. **Grafana**: Visualization for Prometheus metrics (available at port `3000`).
 
 ## Microservices Overview
 
