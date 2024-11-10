@@ -4,6 +4,7 @@ import { Types } from 'mongoose';
 class UserService {
   async createUser(user: User): Promise<User | null> {
     try {
+      user.order_ids = [];
       const newUser = new UserModel(user);
       return await newUser.save();
     } catch (error) {

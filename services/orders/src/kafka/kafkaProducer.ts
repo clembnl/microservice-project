@@ -1,6 +1,6 @@
 import { readFileSync } from 'fs';
 import { Kafka, CompressionTypes } from 'kafkajs';
-import { OrderEntity } from '../orderEntity';
+import { OrderEntity } from '../orderModel';
 
 const kafka = new Kafka({
   clientId: 'order-service',

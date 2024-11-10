@@ -1,5 +1,4 @@
-import axios from 'axios';
-import { OrderEntity } from './orderEntity';
+import { OrderEntity } from './orderModel';
 import { AppDataSource } from './data-source';
 
 

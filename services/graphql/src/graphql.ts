@@ -53,18 +53,18 @@ const typeDefs = gql`
 `;
 
 // DataLoader instances to batch and cache requests
-const orderLoader = new DataLoader<string, Order[]>(async (userIds) => {
+const orderLoader = new DataLoader<string, Order[]>(async (userIds: readonly string[]) => {
   try {
     const response = await axios.get(`http://orders-service:3002/orders`, {
       params: { userIds: userIds.join(',') }
     });
     console.log('Order Loader Response:', response.data); // Log the data to check for issues
-    const orders = response.data;
+    const orders = response.data || []; // Ensure orders is at least an empty array
     // Ensure the length of the returned array matches userIds
-    return userIds.map(userId => orders.filter((order: Order) => order.userId === userId) || null);
+    return userIds.map(userId => orders.filter((order: Order) => order.userId === userId));
   } catch (error) {
-    console.error('Error fetching products:', error);
-    return userIds.map(() => new Error('Error fetching users'));
+    console.error('Error fetching orders:', error);
+    return userIds.map(() => new Error('Error fetching orders'));
   }
 });
 
@@ -75,7 +75,7 @@ const productLoader = new DataLoader(async (productIds: readonly string[]) => {
       params: { ids: productIds.join(',') }  // Correctly passing the productIds
     });
     console.log('Product Loader Response:', response.data); // Log the data to check for issues
-    const products = response.data;
+    const products = response.data || []; // Ensure products is at least an empty array
     // Ensure the length of the returned array matches productIds
     return productIds.map(productId => products.find((product: Product) => product._id === productId));
   } catch (error) {
@@ -87,35 +87,52 @@ const productLoader = new DataLoader(async (productIds: readonly string[]) => {
 // Resolvers to handle GraphQL operations
 const resolvers = {
   Query: {
-    user: async (_: any, { id }: { id: string }): Promise<User> => {
-      const userResponse = await axios.get(`http://users-service:3001/users/${id}`);
-      const user = userResponse.data;
-      const orders = await orderLoader.load(user._id);
-      return { ...user, id: user._id, orders };
+    user: async (_: any, { id }: { id: string }): Promise<User | { message: string }> => {
+      try {
+        const userResponse = await axios.get(`http://users-service:3001/users/${id}`);
+        const user = userResponse.data;
+        if (user) {
+          const orders = await orderLoader.load(user._id);
+          const ordersWithProducts = await Promise.all(orders.map(async (order: Order) => {
+            const products = await productLoader.loadMany(order.productIds);
+            const nonNullProducts = products
+              .filter((product: Product) => !(product instanceof Error) && product !== null)
+              .map((product: Product) => ({ ...product, id: product._id }));
+            return { ...order, id: order.id, products: nonNullProducts };
+          }));
+          return { ...user, id: user._id, orders: ordersWithProducts };
+        } else {
+          return { message: 'User not found' };
+        }
+      } catch (error) {
+        console.error('Error fetching user:', error);
+        throw new Error('Error fetching user');
+      }
     },
     users: async (): Promise<User[]> => {
-      const response = await axios.get('http://users-service:3001/users');
-      const users = response.data;
-      
-      // For each user, fetch associated orders
-      return Promise.all(users.map(async (user: User) => {
-        const orders = await orderLoader.load(user._id);
-                // Check if orders are found and map _id to id
-                const resolvedOrders = orders.map((order: Order) => {
-                  if (order instanceof Error || !order) {
-                    // Handle missing orders if necessary
-                    console.error('Order not found:', order);
-                    throw new Error('Order not found');
-                  }
-                  return { ...order, id: order.id };
-                });
-        
-                // Remove any null products or throw an error if necessary
-                const nonNullOrders = resolvedOrders.filter(order => order !== null);
-                
-                // Return the order with associated non-null products
-                return { ...user, id: user._id, orders: nonNullOrders };
-      }));
+      try {
+        const response = await axios.get('http://users-service:3001/users');
+        const users: User[] = response.data;
+
+        if (users && users.length > 0) {
+          return Promise.all(users.map(async (user: User) => {
+            const orders = await orderLoader.load(user._id);
+            const ordersWithProducts = await Promise.all(orders.map(async (order: Order) => {
+              const products = await productLoader.loadMany(order.productIds);
+              const nonNullProducts = products
+                .filter((product: Product) => !(product instanceof Error) && product !== null)
+                .map((product: Product) => ({ ...product, id: product._id }));
+              return { ...order, id: order.id, products: nonNullProducts };
+            }));
+            return { ...user, id: user._id, orders: ordersWithProducts };
+          }));
+        } else {
+          return [];
+        }
+      } catch (error) {
+        console.error('Error fetching users:', error);
+        throw new Error('Error fetching users');
+      }
     },
     order: async (_: any, { id }: { id: string }): Promise<Order> => {
       const orderResponse = await axios.get(`http://orders-service:3002/orders/${id}`);
@@ -127,26 +144,29 @@ const resolvers = {
       const response = await axios.get('http://orders-service:3002/orders');
       const orders = response.data;
 
-      // Fetch associated products for each order
-      return Promise.all(orders.map(async (order: Order) => {
-        const products = await productLoader.loadMany(order.productIds);
+      if (orders && orders.length > 0) {
+        // Fetch associated products for each order
+        return Promise.all(orders.map(async (order: Order) => {
+          const products = await productLoader.loadMany(order.productIds);
 
-        // Check if products are found and map _id to id
-        const resolvedProducts = products.map((product: Product) => {
-          if (product instanceof Error || !product) {
-            // Handle missing products if necessary
-            console.error('Product not found:', product);
-            throw new Error('Product not found');
-          }
-          return { ...product, id: product._id };
-        });
+          // Check if products are found and map _id to id
+          const resolvedProducts = products.map((product: Product) => {
+            if (product instanceof Error || !product) {
+              // Handle missing products if necessary
+              console.error('Product not found:', product);
+              throw new Error('Product not found');
+            }
+            return { ...product, id: product._id };
+          });
 
-        // Remove any null products or throw an error if necessary
-        const nonNullProducts = resolvedProducts.filter(product => product !== null);
-        
-        // Return the order with associated non-null products
-        return { ...order, products: nonNullProducts };
-      }));
+          // Remove any null products or throw an error if necessary
+          const nonNullProducts = resolvedProducts.filter((product: Product) => product !== null);
+          
+          // Return the order with associated non-null products
+          return { ...order, products: nonNullProducts };
+        }));
+      }
+      else return [] as Order[];
     },
     product: async (_: any, { id }: { id: string }): Promise<Product> => {
       const response = await axios.get(`http://inventory-service:3003/products/${id}`);
@@ -154,7 +174,11 @@ const resolvers = {
     },
     products: async (): Promise<Product[]> => {
       const response = await axios.get('http://inventory-service:3003/products');
-      return response.data.map((product: Product) => ({ ...product, id: product._id }));
+      const orders = response.data;
+      if (orders && orders.length > 0) {
+        return response.data.map((product: Product) => ({ ...product, id: product._id }));
+      }
+      else return [] as Product[];
     }
   },
   Mutation: {
@@ -185,7 +209,7 @@ const resolvers = {
       });
 
       // Remove any null products or throw an error if necessary
-      const nonNullProducts = resolvedProducts.filter(product => product !== null);
+      const nonNullProducts = resolvedProducts.filter((product: Product) => product !== null);
 
        // Calculate the total price
       const total = (nonNullProducts as Product[]).reduce((sum, product) => sum + (product?.price || 0), 0);
@@ -198,11 +222,15 @@ const resolvers = {
         status: 'pending'
       });
 
+      // Clear the cache for this user's orders after creating a new order
+      orderLoader.clear(userId);
+
       return { ...orderResponse.data, products: nonNullProducts };
     },
     updateOrder: async (_: any, { id, status }: { id: string, status: string }): Promise<Order> => {
       const response = await axios.put(`http://orders-service:3002/orders/${id}`, { status });
-      return { ...response.data, id: response.data._id };
+      const products = await productLoader.loadMany(response.data.productIds);
+      return { ...response.data, products };
     },
     deleteOrder: async (_: any, { id }: { id: string }): Promise<boolean> => {
       await axios.delete(`http://orders-service:3002/orders/${id}`);

@@ -1,6 +1,6 @@
 import 'reflect-metadata';
 import { DataSource } from 'typeorm';
-import { OrderEntity } from './orderEntity';
+import { OrderEntity } from './orderModel';
 
 export const AppDataSource = new DataSource({
   type: 'postgres',
@@ -10,7 +10,7 @@ export const AppDataSource = new DataSource({
   password: 'mypassword',
   database: 'orders_db',
   entities: [OrderEntity],
-  synchronize: false,
+  synchronize: true,
   dropSchema: false,   // Add this to drop the schema before synchronization
 });
 
