@@ -1,7 +1,6 @@
-# Microservices Project - Full Project
+# Microservices Project - Module 2
 
-This project demonstrates a complete microservices architecture using **Node.js**, **TypeScript**, **GraphQL**, **Kafka**, and more. It consists of the following services:
-
+This project demonstrates an enhanced microservices architecture built using **Node.js**, **TypeScript**, and **GraphQL**. It consists of four microservices: **Inventory**, **Orders**, **Users**, and **GraphQL**, each connected to its respective database. The services are dockerized and deployed locally using **Docker Compose**.
 1. **Inventory Service** (MongoDB)
 2. **Orders Service** (PostgreSQL)
 3. **Users Service** (MongoDB)
@@ -10,14 +9,19 @@ This project demonstrates a complete microservices architecture using **Node.js*
 6. **Prometheus**: Monitoring for Kafka and microservices.
 7. **Grafana**: Visualization for Prometheus metrics (available at port `3000`).
 
+## Microservices Overview
+
+1. **Inventory Service**: Manages product inventory using **MongoDB**.
+2. **Orders Service**: Manages orders with **PostgreSQL** as its database.
+3. **Users Service**: Manages user data, backed by **MongoDB**.
+4. **GraphQL Service**: Acts as an API gateway, providing a unified GraphQL interface for all services.
+
 ## Prerequisites
 
 Make sure you have the following installed:
 
 - **Docker**: [Install Docker](https://docs.docker.com/get-docker/)
 - **Docker Compose**: [Install Docker Compose](https://docs.docker.com/compose/install/)
-- **Minikube**: [Install Minikube](https://minikube.sigs.k8s.io/docs/start/) (for Kubernetes deployment)
-- **Kubectl**: [Install Kubectl](https://kubernetes.io/docs/tasks/tools/install-kubectl/) (for Kubernetes commands)
 
 ## Project Structure
 
@@ -28,110 +32,130 @@ services/
 ├── users/              # Users service
 ├── graphql/            # GraphQL Gateway service
 docker-compose.yml      # Docker Compose configuration
-kubernetes/             # Kubernetes manifests (deployments, services, etc.)
 ```
 
-## Running with Docker Compose
+## Running the Services Locally
 
-### 1. Build and Start the Services
+To run all the services along with their databases locally, follow these steps:
 
-To build and start all services with **Docker Compose** (including Kafka, Prometheus, and Grafana):
+1. **Clone the Repository**:
 
-```bash
-docker-compose up --build
-```
+   ```bash
+   git clone https://github.com/clembnl/microservice-project.git
+   cd microservice-project
+   git checkout module1
+   ```
 
-### 2. Accessing the Services
+2. **Build and Start the Services**:
 
-Once the services are running, you can access them via the following ports:
+   Run the following command to build the services and start the containers:
 
-- **Inventory Service**: [http://localhost:3003](http://localhost:3003)
-- **Orders Service**: [http://localhost:3002](http://localhost:3002)
-- **Users Service**: [http://localhost:3001](http://localhost:3001)
-- **GraphQL Gateway**: [http://localhost:4000](http://localhost:4000) (Use to query the other services)
-- **Kafka**: Internal service (no direct HTTP access)
-- **Prometheus**: [http://localhost:9090](http://localhost:9090) (for metrics monitoring)
-- **Grafana**: [http://localhost:3000](http://localhost:3000) (for visualizing metrics)
+   ```bash
+   docker-compose up --build
+   ```
 
-You can log in to **Grafana** using the default credentials:
-- Username: `admin`
-- Password: `admin`
+   This command will:
+   - Build the Docker images for each service.
+   - Start the services along with their databases (MongoDB and PostgreSQL).
+  
+3. **Accessing the Services**:
 
-### 3. Stopping the Services
+   The services will be available at the following ports:
 
-To stop and clean up all running services:
+   - **Inventory Service**: [http://localhost:3003](http://localhost:3003)
+   - **Orders Service**: [http://localhost:3002](http://localhost:3002)
+   - **Users Service**: [http://localhost:3001](http://localhost:3001)
+   - **GraphQL Service**: [http://localhost:4000](http://localhost:4000)
+
+## GraphQL Playground
+
+The GraphQL Service provides a GraphQL Playground where you can explore and test the GraphQL API. Access it at: [http://localhost:4000](http://localhost:4000)
+
+## Stopping the Services
+
+To stop and remove the containers, networks, and volumes, run:
 
 ```bash
 docker-compose down
 ```
 
----
+This command will stop all running services and clean up the containers, networks, and volumes created by Docker Compose.
 
-## Running with Kubernetes Minikube
+## GraphQL Queries and Mutations
 
-### 1. Start Minikube
+The **GraphQL Service** exposes a unified API for querying and mutating data across all services. Here are some example queries and mutations:
 
-Start Minikube with sufficient resources:
+### Queries
 
-```bash
-minikube start --cpus 4 --memory 8192
+- Get all products:
+
+```graphql
+query {
+  products {
+    id
+    name
+    price
+    description
+  }
+}
 ```
 
-### 2. Deploy the Services
+- Get a user by ID with their orders and products:
 
-To deploy all services with **Kubernetes** using **kubectl** and **Minikube**, run the following commands from the `kubernetes/` directory:
-
-```bash
-kubectl apply -f k8s/base/namespace.yml
-kubectl apply -f ./k8s/configs
-kubectl apply -f ./k8s/base
-kubectl apply -f ./k8s/network-policies
+```graphql
+query {
+  user(id: "user_id") {
+    id
+    name
+    email
+    orders {
+      id
+      total
+      products {
+        id
+        name
+        price
+      }
+    }
+  }
+}
 ```
 
-This will deploy the services into the `microservices` namespace.
+### Mutations
 
-### 3. Accessing Services in Minikube
+- Create a new product:
 
-In **Minikube**, only **GraphQL Gateway** and **Grafana** are exposed externally. You can access them via Minikube's service tunneling feature:
-
-- Start a tunnel:
-  
-  ```bash
-  minikube tunnel
-  ```
-
-- **GraphQL Gateway**: [http://localhost:4000](http://localhost:4000)
-- **Grafana**: [http://localhost:3000](http://localhost:3000)
-
-You can also access other services (e.g., **Prometheus**) by forwarding their ports:
-
-```bash
-kubectl port-forward svc/prometheus -n microservices 9090:9090
+```graphql
+mutation {
+  createProduct(name: "New Product", price: 9.99, description: "A new product") {
+    id
+    name
+    price
+    description
+  }
+}
 ```
 
-This command will expose Prometheus at [http://localhost:9090](http://localhost:9090).
+- Create a new order:
 
-### 4. Stopping and Cleaning Up
-
-To stop and remove all Kubernetes resources:
-
-```bash
-kubectl delete -f .
+```graphql
+mutation {
+  createOrder(userId: "user_id", productIds: ["product_id_1", "product_id_2"]) {
+    id
+    userId
+    total
+    products {
+      id
+      name
+      price
+    }
+  }
+}
 ```
-
-And to stop Minikube:
-
-```bash
-minikube stop
-```
-
----
 
 ## Environment Variables
 
-You can customize the environment variables for each service in both `docker-compose.yml` (for Docker) and `kubernetes/` manifests (for Kubernetes). This includes database connection strings, service ports, Kafka configurations, etc.
-
----
+You can modify the environment variables for each service in the `docker-compose.yml` file. For example, database connection strings and ports are configured in the `environment` section of each service.
 
 ## License
 
