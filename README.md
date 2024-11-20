@@ -96,10 +96,9 @@ The project includes **Prometheus** and **Grafana** for monitoring the Kafka clu
 Prometheus: Access the Prometheus UI at [http://localhost:9090](http://localhost:9090)
 Grafana: Access the Grafana UI at [http://localhost:3000](http://localhost:3000) (default credentials: admin/admin)
 
-1. Click on the "Add data source" button and select "Prometheus".
-2. Set the URL to [http://localhost:9090](http://localhost:9090) (assuming you've named the Prometheus service as prometheus in the Docker Compose file).
-3. Click on "Save & Test" to verify the connection.
-4. Import a pre-built Kafka dashboard or create your own panels to visualize the desired metrics (7589 for exemple).
+1. Navigate to "Dashboards".
+2. Click on “Kafka Monitoring”.
+3. Check the metrics related to message production and consumption, such as the rate of messages produced and consumed, the number of active consumers, and the consumer group lag.
 
 ## Environment Variables
 
