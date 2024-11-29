@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: zookeeper-config
+  namespace: microservices
+data:
+  zookeeper_jaas.conf: |
+    Server {
+      org.apache.zookeeper.server.auth.DigestLoginModule required
+      user_admin="admin-secret";
+    };

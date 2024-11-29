@@ -4,4 +4,5 @@ kafka/ssl/*
 !kafka/ssl/create-certs.sh
 kafka-1-data
 kafka-2-data
+kafka-3-data
 kafka-data

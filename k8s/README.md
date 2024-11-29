@@ -31,7 +31,9 @@ The system consists of:
 │   ├── graphql-gateway.yml          # GraphQL gateway exposing all microservices
 ├── /configs
 │   ├── kafka-configmap.yml          # ConfigMap for Kafka configurations
+│   ├── zookeeper-configmap.yml      # ConfigMap for Zookeeper configurations
 │   ├── prometheus-configmap.yml     # ConfigMap for Prometheus configurations
+│   ├── grafana-configmap.yml        # ConfigMap for Grafana configurations
 │   ├── postgres-secrets.yml         # Secrets for PostgreSQL credentials
 │   ├── kafka-secrets.yml            # Secrets for Kafka credentials (SASL_SSL, keystore)
 │   ├── users-service-secrets.yml    # Secrets for the users service (certificates, keys)
@@ -41,6 +43,7 @@ The system consists of:
 │   ├── kafka-pvc.yml                # Persistent Volume Claim for Kafka
 │   ├── postgres-pvc.yml             # Persistent Volume Claim for PostgreSQL
 │   ├── prometheus-pvc.yml           # Persistent Volume Claim for Prometheus data
+│   ├── grafana-pvc.yml           # Persistent Volume Claim for Grafana data
 └── README.md
 ```
 
@@ -85,9 +88,12 @@ kubectl create secret generic kafka-secrets \
 Before deploying services, we need to set up the required configurations and secrets for Kafka, PostgreSQL, Prometheus, and the microservices:
 
 ```bash
+kubectl apply -f k8s/configs/zookeeper-configmap.yml
 kubectl apply -f k8s/configs/kafka-configmap.yml
 kubectl apply -f k8s/configs/prometheus-configmap.yml
+kubectl apply -f k8s/configs/grafana-configmap.yml
 kubectl apply -f k8s/configs/postgres-secrets.yml
+kubectl apply -f k8s/configs/kafka-secrets.yml
 kubectl apply -f k8s/configs/kafka-exporter-secrets.yml
 kubectl apply -f k8s/configs/users-service-secrets.yml
 kubectl apply -f k8s/configs/orders-service-secrets.yml
@@ -103,6 +109,7 @@ kubectl apply -f k8s/configs/mongo-inventory-pvc.yml
 kubectl apply -f k8s/configs/kafka-pvc.yml
 kubectl apply -f k8s/configs/postgres-pvc.yml
 kubectl apply -f k8s/configs/prometheus-pvc.yml
+kubectl apply -f k8s/configs/grafana-pvc.yml
 ```
 
 ### 4. Deploy Core Services
@@ -158,11 +165,15 @@ Access the services locally:
 http://localhost:4000/graphql
 ```
 
+```bash
+http://localhost:3000/
+```
+
 ### 7. Monitor with Prometheus and Grafana
 
 After deployment, access the monitoring tools:
 - **Prometheus**: Visit `http://<prometheus-pod-ip>:9090` to query metrics.
-- **Grafana**: Visit `http://<grafana-pod-ip>:3000`, login with `admin/admin`, and configure data sources to connect with Prometheus.
+- **Grafana**: Visit `http://<grafana-pod-ip>:3000`, login with `admin/admin`, and access “Kafka Monitoring” dashboard.
 
 You can create dashboards in Grafana for Kafka, microservices, and database metrics using pre-built templates or custom configurations.
 

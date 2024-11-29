@@ -23,17 +23,30 @@ spec:
           type: RuntimeDefault
       containers:
         - name: zookeeper
-          image: bitnami/zookeeper:latest
+          image: zookeeper:3.7.0
           ports:
             - containerPort: 2181
           env:
-            - name: ALLOW_ANONYMOUS_LOGIN
-              value: "yes"
+            - name: ZOOKEEPER_CLIENT_PORT
+              value: "2181"
+            - name: ZOOKEEPER_TICK_TIME
+              value: "2000"
+            - name: ZOOKEEPER_SASL_ENABLED
+              value: "true"
+            - name: ZOOKEEPER_ALLOW_ANONYMOUS_LOGIN
+              value: "false"
+            - name: ZOOKEEPER_JAAS_LOGIN_RENEW
+              value: "3600000"
+            - name: JVMFLAGS
+              value: "-Djava.security.auth.login.config=/etc/kafka/zookeeper_jaas.conf"
+            - name: ZOO_CFG_EXTRA
+              value: "authProvider.1=org.apache.zookeeper.server.auth.SASLAuthenticationProvider sessionRequireClientSASLAuth=true"
           volumeMounts:
             - name: zookeeper-storage
-              mountPath: /bitnami/zookeeper  # For persistent data storage
-            - name: zookeeper-config
-              mountPath: /opt/bitnami/zookeeper/conf  # Writable configuration directory
+              mountPath: /zookeeper  # For persistent data storage
+            - name: zookeeper-jaas
+              mountPath: /etc/kafka
+              readOnly: true
           # Container-level Security Context
           securityContext:
             allowPrivilegeEscalation: false
@@ -45,8 +58,9 @@ spec:
         - name: zookeeper-storage
           persistentVolumeClaim:
             claimName: zookeeper-pvc
-        - name: zookeeper-config
-          emptyDir: {}  # Use an emptyDir volume for writable config files (non-persistent)
+        - name: zookeeper-jaas
+          configMap:
+            name: zookeeper-config
 ---
 apiVersion: v1
 kind: Service
@@ -56,5 +70,7 @@ metadata:
 spec:
   ports:
     - port: 2181
+      targetPort: 2181
+      name: client
   selector:
     app: zookeeper

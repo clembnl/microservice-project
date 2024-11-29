@@ -16,9 +16,9 @@ spec:
       # Pod-level Security Context
       securityContext:
         runAsNonRoot: true
-        runAsUser: 1000            # Non-root UID
-        runAsGroup: 1000           # Non-root GID
-        fsGroup: 2000              # File system group
+        runAsUser: 472
+        runAsGroup: 472
+        fsGroup: 472
         seccompProfile:
           type: RuntimeDefault
       containers:
@@ -27,22 +27,44 @@ spec:
           env:
             - name: GF_SECURITY_ADMIN_PASSWORD
               value: "admin"
+            - name: GF_DATABASE_TYPE
+              value: "sqlite3"
+            - name: GF_DATABASE_PATH
+              value: "/var/lib/grafana/grafana.db"
           ports:
             - containerPort: 3000
           volumeMounts:
             - name: grafana-storage
-              mountPath: /var/lib/grafana  # Mount PVC here for writable storage
+              mountPath: /var/lib/grafana
+            - name: grafana-datasources
+              mountPath: /etc/grafana/provisioning/datasources
+              readOnly: true
+            - name: grafana-dashboards-config
+              mountPath: /etc/grafana/provisioning/dashboards
+              readOnly: true
+            - name: grafana-dashboards
+              mountPath: /etc/grafana/dashboards
+              readOnly: true
           # Container-level Security Context
           securityContext:
             allowPrivilegeEscalation: false
             capabilities:
               drop:
                 - ALL
-            readOnlyRootFilesystem: true
+            # Ne pas mettre readOnlyRootFilesystem: true car Grafana a besoin d'écrire
       volumes:
         - name: grafana-storage
           persistentVolumeClaim:
             claimName: grafana-pvc  # This is the PVC for persistent storage
+        - name: grafana-datasources
+          configMap:
+            name: grafana-datasources
+        - name: grafana-dashboards-config
+          configMap:
+            name: grafana-dashboards-config
+        - name: grafana-dashboards
+          configMap:
+            name: grafana-dashboards
 ---
 apiVersion: v1
 kind: Service

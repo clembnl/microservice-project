@@ -16,47 +16,58 @@ spec:
       # Pod-level Security Context
       securityContext:
         runAsNonRoot: true
-        runAsUser: 1000            # Non-root UID
-        runAsGroup: 1000           # Non-root GID
-        fsGroup: 2000              # File system group
+        runAsUser: 1001            # Non-root UID
+        runAsGroup: 1001           # Non-root GID
+        fsGroup: 1001              # File system group
         seccompProfile:
           type: RuntimeDefault
       containers:
         - name: kafka
-          image: wurstmeister/kafka:latest
+          image: bitnami/kafka:latest
           ports:
             - containerPort: 9092
           volumeMounts:
             - name: kafka-storage
-              mountPath: /var/lib/kafka/data
+              mountPath: /bitnami/kafka/data
             - name: kafka-secrets
-              mountPath: /etc/kafka/secrets
+              mountPath: /bitnami/kafka/conf/certs/kafka.keystore.jks
+              subPath: kafka.keystore.jks
+              readOnly: true
+            - name: kafka-secrets
+              mountPath: /bitnami/kafka/conf/certs/kafka.truststore.jks
+              subPath: kafka.truststore.jks
+              readOnly: true
+            - name: kafka-secrets
+              mountPath: /bitnami/kafka/conf/certs/ca-cert.pem
+              subPath: ca-cert.pem
+              readOnly: true
+            - name: kafka-jaas-config
+              mountPath: /bitnami/kafka/conf/jaas/kafka_jaas.conf
+              subPath: kafka_jaas.conf
               readOnly: true
           envFrom:
             - configMapRef:
                 name: kafka-config
           env:
-            - name: KAFKA_PORT
-              value: "9092"
-            - name: KAFKA_SSL_KEYSTORE_LOCATION
-              value: "/etc/kafka/secrets/kafka.server.keystore.jks"
-            - name: KAFKA_SSL_KEYSTORE_PASSWORD
-              value: "kafka123"
-            - name: KAFKA_SSL_KEY_PASSWORD
-              value: "kafka123"
-            - name: KAFKA_SSL_TRUSTSTORE_LOCATION
-              value: "/etc/kafka/secrets/kafka.server.truststore.jks"
-            - name: KAFKA_SSL_TRUSTSTORE_PASSWORD
-              value: "kafka123"
+            - name: KAFKA_MOUNTED_CONF_DIR
+              value: "/bitnami/kafka/conf"
             - name: KAFKA_OPTS
-              value: "-Djava.security.auth.login.config=/etc/kafka/secrets/kafka_server_jaas.conf"
+              value: "-Djava.security.auth.login.config=/bitnami/kafka/conf/jaas/kafka_jaas.conf"
+            - name: KAFKA_CFG_LOG_DIRS 
+              value: "/bitnami/kafka/data"
+            - name: KAFKA_CFG_SSL_KEYSTORE_LOCATION
+              value: "/bitnami/kafka/conf/certs/kafka.keystore.jks"
+            - name: KAFKA_CFG_SSL_TRUSTSTORE_LOCATION
+              value: "/bitnami/kafka/conf/certs/kafka.truststore.jks"
+            - name: KAFKA_CFG_SASL_JAAS_CONFIG
+              value: "/bitnami/kafka/conf/jaas/kafka_jaas.conf"
           # Container-level Security Context
           securityContext:
             allowPrivilegeEscalation: false
             capabilities:
               drop:
                 - ALL
-            readOnlyRootFilesystem: true
+            readOnlyRootFilesystem: false
       volumes:
         - name: kafka-storage
           persistentVolumeClaim:
@@ -64,6 +75,19 @@ spec:
         - name: kafka-secrets
           secret:
             secretName: kafka-secrets
+            items:
+              - key: kafka.keystore.jks
+                path: kafka.keystore.jks
+              - key: kafka.truststore.jks
+                path: kafka.truststore.jks
+              - key: ca-cert.pem
+                path: ca-cert.pem
+        - name: kafka-jaas-config
+          configMap:
+            name: kafka-jaas-config
+            items:
+              - key: kafka_jaas.conf
+                path: kafka_jaas.conf
 ---
 apiVersion: v1
 kind: Service
