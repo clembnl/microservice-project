@@ -13,19 +13,15 @@ spec:
       labels:
         app: kafka-exporter
     spec:
-      # Pod-level Security Context
-      securityContext:
-        runAsNonRoot: true
-        runAsUser: 1000            # Non-root UID
-        runAsGroup: 1000           # Non-root GID
-        fsGroup: 2000              # File system group
-        seccompProfile:
-          type: RuntimeDefault
+      initContainers:
+        - name: wait-for-kafka
+          image: busybox
+          command: ['sh', '-c', 'until nc -z kafka-cluster 9092; do echo waiting for kafka; sleep 10; done']
       containers:
         - name: kafka-exporter
           image: danielqsj/kafka-exporter:latest
           args:
-            - '--kafka.server=kafka:9092'
+            - '--kafka.server=kafka-cluster:9092'
             - '--sasl.enabled'
             - '--sasl.username=kafka-exporter'
             - '--sasl.password=kafka-exporter-secret'
@@ -43,17 +39,17 @@ spec:
             - name: kafka-exporter-secrets
               mountPath: /etc/kafka/secrets
               readOnly: true
-          # Container-level Security Context
-          securityContext:
-            allowPrivilegeEscalation: false
-            capabilities:
-              drop:
-                - ALL
-            readOnlyRootFilesystem: true
       volumes:
         - name: kafka-exporter-secrets
           secret:
             secretName: kafka-exporter-secrets
+            items:
+              - key: kafka-exporter-key.pem
+                path: kafka-exporter-key.pem
+              - key: kafka-exporter-certificate.pem
+                path: kafka-exporter-certificate.pem
+              - key: ca-cert.pem
+                path: ca-cert.pem
 ---
 apiVersion: v1
 kind: Service

@@ -10,8 +10,8 @@ export const AppDataSource = new DataSource({
   password: 'mypassword',
   database: 'orders_db',
   entities: [OrderEntity],
-  synchronize: true,
-  dropSchema: false,   // Add this to drop the schema before synchronization
+  synchronize: true,  // Only use this in development
+  dropSchema: true,   // Drop schema before synchronization in development
 });
 
 AppDataSource.initialize()

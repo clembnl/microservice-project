@@ -9,6 +9,10 @@ spec:
       labels:
         app: kafka-acl-setup
     spec:
+      initContainers:
+        - name: wait-for-kafka
+          image: busybox
+          command: ['sh', '-c', 'until nc -z kafka-cluster 9092; do echo waiting for kafka; sleep 10; done']
       containers:
         - name: kafka-acl-setup
           image: wurstmeister/kafka:latest
@@ -16,7 +20,6 @@ spec:
             - /bin/bash
             - -c
             - |
-              sleep 30
               kafka-topics.sh --create --if-not-exists --zookeeper zookeeper:2181 --topic order-created --partitions 3 --replication-factor 1
               kafka-acls.sh --authorizer-properties zookeeper.connect=zookeeper:2181 --add --allow-principal User:order-service --producer --topic order-created
               kafka-acls.sh --authorizer-properties zookeeper.connect=zookeeper:2181 --add --allow-principal User:user-service --consumer --topic order-created --group user-group
@@ -24,13 +27,17 @@ spec:
               kafka-acls.sh --authorizer-properties zookeeper.connect=zookeeper:2181 --add --allow-principal User:kafka-exporter --operation Describe --topic order-created
           env:
             - name: KAFKA_OPTS
-              value: "-Djava.security.auth.login.config=/etc/kafka/secrets/kafka_server_jaas.conf"
+              value: "-Djava.security.auth.login.config=/etc/kafka/kafka_server_jaas.conf"
           volumeMounts:
-            - name: kafka-secrets
-              mountPath: /etc/kafka/secrets
+            - name: kafka-jaas-config
+              mountPath: /etc/kafka/kafka_server_jaas.conf
+              subPath: kafka_server_jaas.conf
               readOnly: true
       restartPolicy: OnFailure
       volumes:
-        - name: kafka-secrets
-          secret:
-            secretName: kafka-secrets
+        - name: kafka-jaas-config
+          configMap:
+            name: kafka-jaas-config
+            items:
+              - key: kafka_server_jaas.conf
+                path: kafka_server_jaas.conf

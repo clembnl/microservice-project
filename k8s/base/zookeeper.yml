@@ -13,14 +13,6 @@ spec:
       labels:
         app: zookeeper
     spec:
-      # Pod-level Security Context
-      securityContext:
-        runAsNonRoot: true
-        runAsUser: 1000            # Non-root UID
-        runAsGroup: 1000           # Non-root GID
-        fsGroup: 1000              # Set fsGroup to allow access to mounted volumes
-        seccompProfile:
-          type: RuntimeDefault
       containers:
         - name: zookeeper
           image: zookeeper:3.7.0
@@ -47,13 +39,6 @@ spec:
             - name: zookeeper-jaas
               mountPath: /etc/kafka
               readOnly: true
-          # Container-level Security Context
-          securityContext:
-            allowPrivilegeEscalation: false
-            capabilities:
-              drop:
-                - ALL
-            # Remove readOnlyRootFilesystem to allow writable access for config/data directories
       volumes:
         - name: zookeeper-storage
           persistentVolumeClaim:

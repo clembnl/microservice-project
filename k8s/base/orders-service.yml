@@ -13,28 +13,17 @@ spec:
       labels:
         app: orders-service
     spec:
-      # Pod-level Security Context
-      securityContext:
-        runAsNonRoot: true
-        runAsUser: 1000            # Non-root UID
-        runAsGroup: 1000           # Non-root GID
-        fsGroup: 2000              # File system group
-        seccompProfile:
-          type: RuntimeDefault
       initContainers:
         - name: wait-for-postgres
           image: busybox
           command: ['sh', '-c', 'until nc -z postgres.microservices.svc.cluster.local 5432; do echo waiting for postgres; sleep 10; done']
-          # Container-level Security Context
-          securityContext:
-            allowPrivilegeEscalation: false
-            capabilities:
-              drop:
-                - ALL
-            readOnlyRootFilesystem: true
+      initContainers:
+        - name: wait-for-kafka
+          image: busybox
+          command: ['sh', '-c', 'until nc -z kafka-cluster 9092; do echo waiting for kafka; sleep 10; done']
       containers:
         - name: orders-service
-          image: clementbonal/microservice-project_orders-service:v2
+          image: clementbonal/microservice-project_orders-service:v3.1 # your-repository-name/microservice-project_orders
           ports:
             - containerPort: 3002
           env:
@@ -58,18 +47,20 @@ spec:
                   name: postgres-secrets
                   key: POSTGRES_DB
             - name: KAFKA_BROKER
-              value: kafka:9092
+              value: kafka-cluster:9092
           volumeMounts:
             - name: kafka-client-secrets
-              mountPath: /etc/kafka/secrets
+              mountPath: /etc/kafka/secrets/ca-cert.pem
+              subPath: ca-cert.pem
               readOnly: true
-          # Container-level Security Context
-          securityContext:
-            allowPrivilegeEscalation: false
-            capabilities:
-              drop:
-                - ALL
-            readOnlyRootFilesystem: true
+            - name: kafka-client-secrets
+              mountPath: /etc/kafka/secrets/orders-service-key.pem
+              subPath: orders-service-key.pem
+              readOnly: true
+            - name: kafka-client-secrets
+              mountPath: /etc/kafka/secrets/orders-service-certificate.pem
+              subPath: orders-service-certificate.pem
+              readOnly: true
       volumes:
         - name: kafka-client-secrets
           secret:

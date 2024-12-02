@@ -31,19 +31,20 @@ The system consists of:
 │   ├── graphql-gateway.yml          # GraphQL gateway exposing all microservices
 ├── /configs
 │   ├── kafka-configmap.yml          # ConfigMap for Kafka configurations
-│   ├── zookeeper-configmap.yml      # ConfigMap for Zookeeper configurations
-│   ├── prometheus-configmap.yml     # ConfigMap for Prometheus configurations
-│   ├── grafana-configmap.yml        # ConfigMap for Grafana configurations
-│   ├── postgres-secrets.yml         # Secrets for PostgreSQL credentials
 │   ├── kafka-secrets.yml            # Secrets for Kafka credentials (SASL_SSL, keystore)
+│   ├── kafka-pvc.yml                # Persistent Volume Claim for Kafka
+│   ├── zookeeper-configmap.yml      # ConfigMap for Zookeeper configurations
+│   ├── zookeeper-pvc.yml            # Persistent Volume Claim for Zookeeper
+│   ├── grafana-configmap.yml        # ConfigMap for Grafana configurations
+│   ├── grafana-pvc.yml              # Persistent Volume Claim for Grafana data
 │   ├── users-service-secrets.yml    # Secrets for the users service (certificates, keys)
 │   ├── orders-service-secrets.yml   # Secrets for the orders service (certificates, keys)
 │   ├── mongo-users-pvc.yml          # Persistent Volume Claim for MongoDB (users)
 │   ├── mongo-inventory-pvc.yml      # Persistent Volume Claim for MongoDB (inventory)
-│   ├── kafka-pvc.yml                # Persistent Volume Claim for Kafka
 │   ├── postgres-pvc.yml             # Persistent Volume Claim for PostgreSQL
+│   ├── postgres-secrets.yml         # Secrets for PostgreSQL credentials
+│   ├── prometheus-configmap.yml     # ConfigMap for Prometheus configurations
 │   ├── prometheus-pvc.yml           # Persistent Volume Claim for Prometheus data
-│   ├── grafana-pvc.yml           # Persistent Volume Claim for Grafana data
 └── README.md
 ```
 
@@ -53,6 +54,13 @@ Make sure you have the following installed:
 - **Kubernetes cluster** (e.g., Minikube, AWS EKS, GKE, etc.)
 - **kubectl** for interacting with your Kubernetes cluster
 - **Docker** for building the images (if deploying custom images)
+
+Here you will need to build your custom docker image for **users-service**, **orders-service**, **inventory-service** and **graphql-gateway** with the following commands in their respective directory:
+
+```bash
+docker build -t your-repository-name/microservice-project_service .
+docker push your-repository-name/microservice-project_service
+```
 
 Locally with Minikube:
 
@@ -68,19 +76,6 @@ Create a namespace to keep all resources under a single logical grouping:
 
 ```bash
 kubectl apply -f k8s/base/namespace.yml
-```
-
-### 2. Create Kafka-Secrets
-
-Before deploying Kafka, keystore, truststore, and certificate files should be stored as binary files and mounted as volumes, not passed as environment variables. Kubernetes will handle the encoding, this will correctly store your secret values as files in Kubernetes.
-
-```bash
-kubectl create secret generic kafka-secrets \
-  --from-file=kafka.server.keystore.jks=./kafka/ssl/kafka.server.keystore.jks \
-  --from-file=kafka.server.truststore.jks=./kafka/ssl/kafka.server.truststore.jks \
-  --from-file=ca-cert.pem=./kafka/ssl/ca-cert.pem \
-  --from-file=kafka_server_jaas.conf=./kafka/kafka_server_jaas.conf \    
-  --namespace=microservices
 ```
 
 ### 2. Apply Configuration and Secrets

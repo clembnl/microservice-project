@@ -28,7 +28,7 @@ services/
 ├── users/              # Users service
 ├── graphql/            # GraphQL Gateway service
 docker-compose.yml      # Docker Compose configuration
-kubernetes/             # Kubernetes manifests (deployments, services, etc.)
+k8s/             # Kubernetes manifests (deployments, services, etc.)
 ```
 
 ## Running with Docker Compose
@@ -82,10 +82,9 @@ minikube start --cpus 4 --memory 8192
 To deploy all services with **Kubernetes** using **kubectl** and **Minikube**, run the following commands from the `kubernetes/` directory:
 
 ```bash
-kubectl apply -f k8s/base/namespace.yml
+kubectl apply -f ./k8s/base/namespace.yml
 kubectl apply -f ./k8s/configs
 kubectl apply -f ./k8s/base
-kubectl apply -f ./k8s/network-policies
 ```
 
 This will deploy the services into the `microservices` namespace.

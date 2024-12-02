@@ -13,14 +13,6 @@ spec:
       labels:
         app: mongo-inventory
     spec:
-      # Pod-level Security Context
-      securityContext:
-        runAsNonRoot: true
-        runAsUser: 999            # Non-root UID
-        runAsGroup: 999           # Non-root GID
-        fsGroup: 999              # File system group
-        seccompProfile:
-          type: RuntimeDefault
       containers:
         - name: mongo-inventory
           image: mongo:4.4
@@ -32,13 +24,6 @@ spec:
           volumeMounts:
             - name: mongo-inventory-storage
               mountPath: /data/db
-          # Container-level Security Context
-          securityContext:
-            allowPrivilegeEscalation: false
-            capabilities:
-              drop:
-                - ALL
-            # Removed readOnlyRootFilesystem to allow writes to data directory
       volumes:
         - name: mongo-inventory-storage
           persistentVolumeClaim:

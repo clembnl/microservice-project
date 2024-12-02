@@ -1,73 +1,50 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: kafka
+  name: kafka-cluster
   namespace: microservices
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: kafka
+      app: kafka-cluster
   template:
     metadata:
       labels:
-        app: kafka
+        app: kafka-cluster
     spec:
-      # Pod-level Security Context
-      securityContext:
-        runAsNonRoot: true
-        runAsUser: 1001            # Non-root UID
-        runAsGroup: 1001           # Non-root GID
-        fsGroup: 1001              # File system group
-        seccompProfile:
-          type: RuntimeDefault
       containers:
-        - name: kafka
-          image: bitnami/kafka:latest
+        - name: kafka-cluster
+          image: wurstmeister/kafka:latest
           ports:
             - containerPort: 9092
           volumeMounts:
             - name: kafka-storage
-              mountPath: /bitnami/kafka/data
+              mountPath: /var/lib/kafka/data
             - name: kafka-secrets
-              mountPath: /bitnami/kafka/conf/certs/kafka.keystore.jks
-              subPath: kafka.keystore.jks
+              mountPath: /etc/kafka/secrets/kafka.server.keystore.jks
+              subPath: kafka.server.keystore.jks
               readOnly: true
             - name: kafka-secrets
-              mountPath: /bitnami/kafka/conf/certs/kafka.truststore.jks
-              subPath: kafka.truststore.jks
+              mountPath: /etc/kafka/secrets/kafka.server.truststore.jks
+              subPath: kafka.server.truststore.jks
               readOnly: true
             - name: kafka-secrets
-              mountPath: /bitnami/kafka/conf/certs/ca-cert.pem
+              mountPath: /etc/kafka/secrets/ca-cert.pem
               subPath: ca-cert.pem
               readOnly: true
             - name: kafka-jaas-config
-              mountPath: /bitnami/kafka/conf/jaas/kafka_jaas.conf
-              subPath: kafka_jaas.conf
+              mountPath: /etc/kafka/kafka_server_jaas.conf
+              subPath: kafka_server_jaas.conf
               readOnly: true
           envFrom:
             - configMapRef:
                 name: kafka-config
           env:
-            - name: KAFKA_MOUNTED_CONF_DIR
-              value: "/bitnami/kafka/conf"
+            - name: KAFKA_PORT
+              value: "9092"
             - name: KAFKA_OPTS
-              value: "-Djava.security.auth.login.config=/bitnami/kafka/conf/jaas/kafka_jaas.conf"
-            - name: KAFKA_CFG_LOG_DIRS 
-              value: "/bitnami/kafka/data"
-            - name: KAFKA_CFG_SSL_KEYSTORE_LOCATION
-              value: "/bitnami/kafka/conf/certs/kafka.keystore.jks"
-            - name: KAFKA_CFG_SSL_TRUSTSTORE_LOCATION
-              value: "/bitnami/kafka/conf/certs/kafka.truststore.jks"
-            - name: KAFKA_CFG_SASL_JAAS_CONFIG
-              value: "/bitnami/kafka/conf/jaas/kafka_jaas.conf"
-          # Container-level Security Context
-          securityContext:
-            allowPrivilegeEscalation: false
-            capabilities:
-              drop:
-                - ALL
-            readOnlyRootFilesystem: false
+              value: "-Djava.security.auth.login.config=/etc/kafka/kafka_server_jaas.conf"
       volumes:
         - name: kafka-storage
           persistentVolumeClaim:
@@ -76,26 +53,26 @@ spec:
           secret:
             secretName: kafka-secrets
             items:
-              - key: kafka.keystore.jks
-                path: kafka.keystore.jks
-              - key: kafka.truststore.jks
-                path: kafka.truststore.jks
+              - key: kafka.server.keystore.jks
+                path: kafka.server.keystore.jks
+              - key: kafka.server.truststore.jks
+                path: kafka.server.truststore.jks
               - key: ca-cert.pem
                 path: ca-cert.pem
         - name: kafka-jaas-config
           configMap:
             name: kafka-jaas-config
             items:
-              - key: kafka_jaas.conf
-                path: kafka_jaas.conf
+              - key: kafka_server_jaas.conf
+                path: kafka_server_jaas.conf
 ---
 apiVersion: v1
 kind: Service
 metadata:
-  name: kafka
+  name: kafka-cluster
   namespace: microservices
 spec:
   ports:
     - port: 9092
   selector:
-    app: kafka
+    app: kafka-cluster

@@ -13,17 +13,9 @@ spec:
       labels:
         app: graphql-gateway
     spec:
-      # Pod-level Security Context
-      securityContext:
-        runAsNonRoot: true
-        runAsUser: 1000            # Non-root UID
-        runAsGroup: 1000           # Non-root GID
-        fsGroup: 2000              # File system group
-        seccompProfile:
-          type: RuntimeDefault
       containers:
         - name: graphql-gateway
-          image: clementbonal/microservice-project_graphql:v3
+          image: clementbonal/microservice-project_graphql:v4 # your-repository-name/microservice-project_graphql
           ports:
             - containerPort: 4000
           env:
@@ -33,13 +25,6 @@ spec:
               value: http://orders-service:3002
             - name: INVENTORY_SERVICE_URL
               value: http://inventory-service:3003
-          # Container-level Security Context
-          securityContext:
-            allowPrivilegeEscalation: false
-            capabilities:
-              drop:
-                - ALL
-            readOnlyRootFilesystem: true
 ---
 apiVersion: v1
 kind: Service

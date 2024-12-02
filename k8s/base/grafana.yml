@@ -13,14 +13,6 @@ spec:
       labels:
         app: grafana
     spec:
-      # Pod-level Security Context
-      securityContext:
-        runAsNonRoot: true
-        runAsUser: 472
-        runAsGroup: 472
-        fsGroup: 472
-        seccompProfile:
-          type: RuntimeDefault
       containers:
         - name: grafana
           image: grafana/grafana:latest
@@ -45,13 +37,6 @@ spec:
             - name: grafana-dashboards
               mountPath: /etc/grafana/dashboards
               readOnly: true
-          # Container-level Security Context
-          securityContext:
-            allowPrivilegeEscalation: false
-            capabilities:
-              drop:
-                - ALL
-            # Ne pas mettre readOnlyRootFilesystem: true car Grafana a besoin d'écrire
       volumes:
         - name: grafana-storage
           persistentVolumeClaim:
