@@ -1,4 +1,3 @@
-```markdown
 # Kubernetes Deployment for Microservices Architecture
 
 This repository contains Kubernetes manifests to deploy a microservices-based architecture using Kafka, MongoDB, PostgreSQL, Prometheus, Grafana, and microservices (`users`, `orders`, `inventory`, and `graphql-gateway`).
