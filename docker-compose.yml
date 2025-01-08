@@ -16,7 +16,7 @@ services:
     volumes:
       - ./kafka/zookeeper_jaas.conf:/etc/kafka/zookeeper_jaas.conf
 
-  kafka:
+  kafka-cluster:
     image: wurstmeister/kafka:latest
     ports:
       - "9092:9092"
@@ -24,7 +24,7 @@ services:
       KAFKA_BROKER_ID: 1
       KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
       KAFKA_LISTENERS: SASL_SSL://0.0.0.0:9092
-      KAFKA_ADVERTISED_LISTENERS: SASL_SSL://kafka:9092
+      KAFKA_ADVERTISED_LISTENERS: SASL_SSL://kafka-cluster:9092
       KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
       KAFKA_SASL_ENABLED_MECHANISMS: PLAIN
       KAFKA_SASL_MECHANISM_INTER_BROKER_PROTOCOL: PLAIN
@@ -54,7 +54,7 @@ services:
   kafka-acl-setup:
     image: wurstmeister/kafka:latest
     depends_on:
-      - kafka
+      - kafka-cluster
     environment:
       KAFKA_OPTS: "-Djava.security.auth.login.config=/etc/kafka/kafka_server_jaas.conf"
     volumes:
@@ -76,7 +76,7 @@ services:
     ports:
       - "9308:9308"
     command:
-      - '--kafka.server=kafka:9092'
+      - '--kafka.server=kafka-cluster:9092'
       - '--sasl.enabled'
       - '--sasl.username=kafka-exporter'
       - '--sasl.password=kafka-exporter-secret'
@@ -93,7 +93,7 @@ services:
       - ./kafka/ssl/kafka-exporter-key.pem:/etc/kafka/secrets/kafka-exporter-key.pem
       - ./kafka/ssl/kafka-exporter-certificate.pem:/etc/kafka/secrets/kafka-exporter-certificate.pem
     depends_on:
-      - kafka
+      - kafka-cluster
     restart: always
 
   prometheus:
@@ -155,7 +155,7 @@ services:
       - "3001:3001"
     depends_on:
       - mongo-users
-      - kafka
+      - kafka-cluster
     volumes:
       - ./kafka/ssl/ca-cert.pem:/etc/kafka/secrets/ca-cert.pem
       - ./kafka/ssl/users-service-key.pem:/etc/kafka/secrets/users-service-key.pem
@@ -167,7 +167,7 @@ services:
       - "3002:3002"
     depends_on:
       - postgres
-      - kafka
+      - kafka-cluster
     environment:
       POSTGRES_HOST: postgres
       POSTGRES_PORT: 5432

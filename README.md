@@ -84,6 +84,7 @@ To deploy all services with **Kubernetes** using **kubectl** and **Minikube**, r
 ```bash
 kubectl apply -f ./k8s/base/namespace.yml
 kubectl apply -f ./k8s/configs
+kubectl apply -f ./k8s/network-policies
 kubectl apply -f ./k8s/base
 ```
 

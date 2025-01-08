@@ -10,14 +10,14 @@ export const AppDataSource = new DataSource({
   password: 'mypassword',
   database: 'orders_db',
   entities: [OrderEntity],
-  synchronize: true,  // Only use this in development
-  dropSchema: true,   // Drop schema before synchronization in development
+  synchronize: false,  // Only use this in development
 });
 
 AppDataSource.initialize()
   .then(() => {
     console.log('Connected to PostgreSQL for Orders service');
   })
-  .catch((err) => {
+  .catch(async (err) => {
     console.error('Error during Data Source initialization', err);
+    process.exit(1);
   });

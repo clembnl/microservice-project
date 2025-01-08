@@ -1,0 +1,18 @@
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-grafana-external
+  namespace: microservices
+spec:
+  podSelector:
+    matchLabels:
+      app: grafana
+  ingress:
+    - from:
+        - ipBlock:
+            cidr: 0.0.0.0/0   # Allow external traffic
+      ports:
+        - protocol: TCP
+          port: 3000           # Grafana UI port
+  policyTypes:
+    - Ingress

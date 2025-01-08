@@ -17,13 +17,12 @@ spec:
         - name: wait-for-postgres
           image: busybox
           command: ['sh', '-c', 'until nc -z postgres.microservices.svc.cluster.local 5432; do echo waiting for postgres; sleep 10; done']
-      initContainers:
         - name: wait-for-kafka
           image: busybox
           command: ['sh', '-c', 'until nc -z kafka-cluster 9092; do echo waiting for kafka; sleep 10; done']
       containers:
         - name: orders-service
-          image: clementbonal/microservice-project_orders-service:v3.1 # your-repository-name/microservice-project_orders
+          image: clementbonal/microservice-project_orders-service:v3.3 # your-repository-name/microservice-project_orders
           ports:
             - containerPort: 3002
           env:

@@ -45,6 +45,19 @@ The system consists of:
 │   ├── postgres-secrets.yml         # Secrets for PostgreSQL credentials
 │   ├── prometheus-configmap.yml     # ConfigMap for Prometheus configurations
 │   ├── prometheus-pvc.yml           # Persistent Volume Claim for Prometheus data
+├── /network-policies
+│   ├── allow-zookeeper.yml          # Network policy for Zookeeper
+│   ├── allow-kafka.yml              # Network policy for Kafka
+│   ├── allow-kafka-exporter.yml     # Network policy for Kafka exporter
+│   ├── allow-prometheus.yml         # Network policy for Prometheus
+│   ├── allow-grafana.yml            # Network policy for Grafana
+│   ├── allow-postgres.yml           # Network policy for PostgreSQL
+│   ├── allow-mongo-users.yml        # Network policy for MongoDB for user service
+│   ├── allow-mongo-inventory.yml    # Network policy for MongoDB for inventory service
+│   ├── allow-users-service.yml      # Network policy for the users microservice
+│   ├── allow-orders-service.yml     # Network policy for the orders microservice
+│   ├── allow-inventory-service.yml  # Network policy for the inventory microservice
+│   ├── allow-graphql-gateway.yml    # Network policy for GraphQL
 └── README.md
 ```
 
@@ -107,7 +120,15 @@ kubectl apply -f k8s/configs/prometheus-pvc.yml
 kubectl apply -f k8s/configs/grafana-pvc.yml
 ```
 
-### 4. Deploy Core Services
+### 4. Deploy Network Policies
+
+Deploy Zookeeper, Kafka, Prometheus, Grafana, and the databases:
+
+```bash
+kubectl apply -f k8s/network-policies
+```
+
+### 5. Deploy Core Services
 
 Deploy Zookeeper, Kafka, Prometheus, Grafana, and the databases:
 
@@ -123,7 +144,7 @@ kubectl apply -f k8s/base/mongo-users.yml
 kubectl apply -f k8s/base/mongo-inventory.yml
 ```
 
-### 5. Deploy the Microservices
+### 6. Deploy the Microservices
 
 Deploy the actual microservices and the GraphQL gateway:
 
@@ -134,7 +155,7 @@ kubectl apply -f k8s/base/inventory-service.yml
 kubectl apply -f k8s/base/graphql-gateway.yml
 ```
 
-### 6. Access the Microservices
+### 7. Access the Microservices
 
 Expose the services and access them from local machine with MiniKube:
 
@@ -164,7 +185,7 @@ http://localhost:4000/graphql
 http://localhost:3000/
 ```
 
-### 7. Monitor with Prometheus and Grafana
+### 8. Monitor with Prometheus and Grafana
 
 After deployment, access the monitoring tools:
 - **Prometheus**: Visit `http://<prometheus-pod-ip>:9090` to query metrics.
