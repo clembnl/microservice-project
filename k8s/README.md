@@ -214,4 +214,3 @@ You can create dashboards in Grafana for Kafka, microservices, and database metr
 ### License
 
 This project is licensed under the MIT License.
-```
